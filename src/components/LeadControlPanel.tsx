@@ -469,7 +469,7 @@ export function LeadControlPanel() {
                   tcmId={tcmId}
                   scheduledAt={scheduledAt}
                   answers={scheduleAnswers}
-                  onAnswersChange={(patch) => setScheduleAnswers((answers) => ({ ...answers, ...patch }))}
+                  onAnswersChange={(patch: Partial<DrawerScheduleAnswers>) => setScheduleAnswers((answers) => ({ ...answers, ...patch }))}
                   onPropertyChange={setPropertyId}
                   onTcmChange={setTcmId}
                   onScheduledAtChange={setScheduledAt}
@@ -776,7 +776,7 @@ function UpcomingTourCard({
 }
 
 function InlineScheduleTour({
-  lead, properties, tcms, propertyId, tcmId, scheduledAt,
+  lead, properties, tcms, propertyId, tcmId, scheduledAt, answers, onAnswersChange,
   onPropertyChange, onTcmChange, onScheduledAtChange, onSchedule,
 }: {
   lead: Lead;
@@ -785,6 +785,8 @@ function InlineScheduleTour({
   propertyId: string;
   tcmId: string;
   scheduledAt: string;
+  answers: DrawerScheduleAnswers;
+  onAnswersChange: (patch: Partial<DrawerScheduleAnswers>) => void;
   onPropertyChange: (value: string) => void;
   onTcmChange: (value: string) => void;
   onScheduledAtChange: (value: string) => void;
