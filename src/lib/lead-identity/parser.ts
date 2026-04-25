@@ -207,8 +207,23 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   };
 
   // ---------- Phone ----------
-  const phoneMatch = clean.match(/(?:\+?91[-\s]?)?([6-9]\d{4}[-\s]?\d{5})/);
-  const phone = phoneMatch ? phoneMatch[0].replace(/[-\s]/g, "") : "";
+  // Accept tightly packed (9876543210), with country code, hyphens, spaces,
+  // or split into 3+3+4 / 4+3+3 groups. We strip non-digits then re-validate.
+  let phone = "";
+  const digitOnly = clean.replace(/[^\d]/g, "");
+  // Find a 10-digit Indian mobile inside the digit-only stream (optionally
+  // prefixed by 91), but only if it appears as a recognisable run in the raw.
+  const tightMatch = clean.match(/(?:\+?\s*91[-\s]?)?(?:\d[-\s]?){9,12}\d/);
+  if (tightMatch) {
+    const candidate = tightMatch[0].replace(/[^\d]/g, "");
+    const trimmed = candidate.replace(/^91/, "");
+    const m = trimmed.match(/[6-9]\d{9}/);
+    if (m) phone = m[0];
+  }
+  if (!phone) {
+    const m = digitOnly.match(/[6-9]\d{9}/);
+    if (m) phone = m[0];
+  }
 
   // ---------- Email ----------
   const emailMatch = clean.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
