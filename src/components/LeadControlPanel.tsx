@@ -801,6 +801,43 @@ function InlineScheduleTour({
           <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Budget</span><span className="font-medium text-foreground">₹{(lead.budget / 1000).toFixed(0)}k</span></div>
           <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Area</span><span className="font-medium text-foreground">{lead.preferredArea}</span></div>
         </div>
+        <div className="rounded-md border border-border bg-background/60 p-2 space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">MYT Schedule questions</div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Field label="Source"><Select value={answers.bookingSource} onValueChange={(v) => onAnswersChange({ bookingSource: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{BOOKING_SOURCES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select></Field>
+            <Field label="Decision maker"><Select value={answers.decisionMaker} onValueChange={(v) => onAnswersChange({ decisionMaker: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{DECISION_MAKERS.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select></Field>
+            <Field label="Move-in"><Input type="date" value={answers.moveInDate} onChange={(e) => onAnswersChange({ moveInDate: e.target.value })} className="h-8 text-xs" /></Field>
+            <Field label="Budget"><Input type="number" value={answers.budget} onChange={(e) => onAnswersChange({ budget: e.target.value })} className="h-8 text-xs" /></Field>
+            <Field label="Work / College"><Input value={answers.occupation} onChange={(e) => onAnswersChange({ occupation: e.target.value })} className="h-8 text-xs" /></Field>
+            <Field label="Work location"><Input value={answers.workLocation} onChange={(e) => onAnswersChange({ workLocation: e.target.value })} className="h-8 text-xs" /></Field>
+          </div>
+          <Field label="Room type"><Select value={answers.roomType} onValueChange={(v) => onAnswersChange({ roomType: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{ROOM_TYPES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></Field>
+          <div className="grid gap-1.5">
+            {([
+              ["readyIn48h", "Ready to finalize within 48 hours"],
+              ["exploring", "Only exploring"],
+              ["comparing", "Comparing options"],
+              ["needsFamily", "Needs family approval"],
+            ] as const).map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 rounded-md border border-border bg-surface-2/40 px-2 py-1.5 text-xs">
+                <Checkbox checked={answers[key]} onCheckedChange={(v) => onAnswersChange({ [key]: v === true })} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <Field label="Will book today"><Select value={answers.willBookToday} onValueChange={(v) => onAnswersChange({ willBookToday: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{["yes", "maybe", "no"].map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select></Field>
+          <Field label="Key concern"><Input value={answers.keyConcern} onChange={(e) => onAnswersChange({ keyConcern: e.target.value })} className="h-8 text-xs" /></Field>
+        </div>
+        <div>
+          <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Tour Type</Label>
+          <div className="mt-1 grid grid-cols-3 gap-2">
+            {TOUR_TYPES.map(({ value, label, icon: Icon }) => (
+              <button key={value} type="button" onClick={() => onAnswersChange({ tourType: value })} className={`h-12 rounded-md border text-xs flex flex-col items-center justify-center gap-1 ${answers.tourType === value ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2 text-muted-foreground"}`}>
+                <Icon className="h-3.5 w-3.5" />{label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Property</Label>
