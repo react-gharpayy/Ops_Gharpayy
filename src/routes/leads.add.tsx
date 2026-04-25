@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { PasteToLead } from "@/components/leads/PasteToLead";
-import { BulkPasteImport } from "@/components/leads/BulkPasteImport";
+import { DirectLeadForm } from "@/components/leads/DirectLeadForm";
 import { RequestAccessSheet } from "@/components/leads/RequestAccessSheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIdentityStore } from "@/lib/lead-identity/store";
@@ -11,7 +10,7 @@ export const Route = createFileRoute("/leads/add")({
   head: () => ({
     meta: [
       { title: "Add Lead — Gharpayy" },
-      { name: "description", content: "Paste any format. Auto-parse, dedup, and assign ownership in one click." },
+      { name: "description", content: "Direct entry with live dedup, zone detection, and one-click ownership." },
     ],
   }),
   component: AddLeadPage,
@@ -34,11 +33,9 @@ function AddLeadPage() {
         <Tabs defaultValue="single" className="space-y-4">
           <TabsList>
             <TabsTrigger value="single">Single lead</TabsTrigger>
-            <TabsTrigger value="bulk">Bulk import</TabsTrigger>
             <TabsTrigger value="requests">Access requests</TabsTrigger>
           </TabsList>
-          <TabsContent value="single"><PasteToLead /></TabsContent>
-          <TabsContent value="bulk"><BulkPasteImport /></TabsContent>
+          <TabsContent value="single"><DirectLeadForm /></TabsContent>
           <TabsContent value="requests"><RequestAccessSheet /></TabsContent>
         </Tabs>
       </div>
