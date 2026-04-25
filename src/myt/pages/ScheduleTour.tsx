@@ -17,6 +17,8 @@ import { SlotPicker, getTakenSlotsForDate } from '@/myt/components/SlotPicker';
 import { Building2, Video, Briefcase, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendTourMessage, logTourEvent } from '@/myt/lib/tour-messages';
+import { useLocation } from '@/shims/react-router-dom';
+import { useIdentityStore } from '@/lib/lead-identity/store';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 const in7days = () => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; };
@@ -28,8 +30,10 @@ interface ScheduleTourProps {
 }
 
 export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
-  const { tours, setTours, rooms, blocks, setBlocks } = useAppState();
+  const { tours, setTours, rooms, blocks, setBlocks, leads, setLeads } = useAppState();
   const { role, currentTcmId, tcms: storeTcms } = useApp();
+  const location = useLocation();
+  const setLifecycleState = useIdentityStore((s) => s.setLifecycleState);
   const currentTcmName = storeTcms.find((t) => t.id === currentTcmId)?.name;
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -66,6 +70,30 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
       if (match) setForm((f) => ({ ...f, assignedTo: match.id }));
     }
   }, [role, currentTcmName, form.assignedTo]);
+
+  useEffect(() => {
+    const stateLead = (location.state as { lead?: Record<string, unknown> } | null)?.lead;
+    if (!stateLead) return;
+    const leadName = String(stateLead.name ?? '');
+    const phone = String(stateLead.phone ?? stateLead.phoneRaw ?? stateLead.phoneE164 ?? '');
+    const moveIn = String(stateLead.moveInDate ?? '');
+    const budget = String(stateLead.budget ?? '12000').replace(/\D/g, '') || '12000';
+    const area = String(stateLead.area ?? stateLead.location ?? stateLead.fullAddress ?? '');
+    const room = String(stateLead.room ?? stateLead.roomType ?? 'Single').toLowerCase();
+    const type = String(stateLead.type ?? '');
+    const notes = String(stateLead.notes ?? stateLead.extraContent ?? '');
+    setForm((f) => ({
+      ...f,
+      leadName: leadName || f.leadName,
+      phone: phone || f.phone,
+      moveInDate: /^\d{4}-\d{2}-\d{2}$/.test(moveIn) ? moveIn : f.moveInDate,
+      budget,
+      workLocation: area || f.workLocation,
+      occupation: type || f.occupation,
+      roomType: room.includes('private') ? 'Single' : room.includes('shared') ? 'Double Sharing' : f.roomType,
+      keyConcern: notes || f.keyConcern,
+    }));
+  }, [location.state]);
 
   const qualification: TourQualification = useMemo(() => ({
     moveInDate: form.moveInDate,
@@ -135,6 +163,15 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
       whyLost: null,
     };
     setTours(prev => [newTour, ...prev]);
+    const normalizedPhone = form.phone.replace(/\D/g, '').slice(-10);
+    setLeads(prev => prev.map((lead) => (
+      lead.phone.replace(/\D/g, '').slice(-10) === normalizedPhone
+        ? { ...lead, status: 'tour-scheduled' }
+        : lead
+    )));
+    const stateLead = (location.state as { lead?: Record<string, unknown> } | null)?.lead;
+    const ulid = typeof stateLead?.ulid === 'string' ? stateLead.ulid : null;
+    if (ulid) setLifecycleState(ulid, 'visit-scheduled');
 
     // Auto room block based on intent
     const matchingProp = allProperties.find(p => p.name === form.propertyName && p.zoneId === form.zoneId);
