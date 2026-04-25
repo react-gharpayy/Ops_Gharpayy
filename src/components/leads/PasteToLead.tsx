@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardPaste, Search, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { ClipboardPaste, Search, CheckCircle2, AlertCircle, Sparkles, MapPin, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { DuplicateModal } from "./DuplicateModal";
 
@@ -18,7 +18,7 @@ interface Props {
 const emptyDraft = (): ParsedLeadDraft => ({
   name: "", phone: "", email: "", location: "", areas: [], fullAddress: "",
   budget: "", moveIn: "",
-  type: "", room: "", need: "", specialReqs: "", inBLR: null, zone: "", rawSource: "",
+  type: "", room: "", need: "", specialReqs: "", extraContent: "", summary: "", budgets: [], links: [], inBLR: null, zone: "", rawSource: "",
 });
 
 export function PasteToLead({ onCreated }: Props) {
@@ -46,6 +46,15 @@ export function PasteToLead({ onCreated }: Props) {
     setDraft(p);
     setParsed(true);
     toast.success("Parsed — review fields and run duplicate check.");
+  };
+
+  const autoParse = (text: string) => {
+    setRaw(text);
+    const p = parseLead(text);
+    if (!p) return;
+    setDraft(p);
+    setParsed(true);
+    toast.success("Auto-parsed paste");
   };
 
   const onPasteFromClipboard = async () => {
@@ -115,7 +124,13 @@ export function PasteToLead({ onCreated }: Props) {
         </div>
         <Textarea
           value={raw}
-          onChange={(e) => setRaw(e.target.value)}
+          onChange={(e) => autoParse(e.target.value)}
+          onPaste={(e) => {
+            const text = e.clipboardData.getData("text");
+            if (!text) return;
+            e.preventDefault();
+            autoParse(text);
+          }}
           placeholder={`Paste anything…\n\n📝 GHARPAYY FORM\nName: Rahul Sharma\nPhone: 9876543210\nLocation: Koramangala\nBudget: 8-12k\nMove-in: 1 May`}
           className="min-h-32 font-mono text-xs"
         />
@@ -160,6 +175,20 @@ export function PasteToLead({ onCreated }: Props) {
               <Label className="text-[11px]">Room</Label>
               <Input value={draft.room} onChange={(e) => updateField("room", e.target.value)} className="h-9 text-sm" placeholder="Private / Shared / Both" />
             </div>
+          </div>
+
+          <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="text-xs font-medium flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" /> Geo-intelligence</div>
+              {draft.geoIntel && <Badge variant="outline" className="text-[10px]">{draft.geoIntel.confidence} · {draft.geoIntel.syncStatus}</Badge>}
+            </div>
+            <p className="text-[11px] text-muted-foreground">{draft.geoIntel?.distanceHint || "Paste location or map link to prepare distance sync."}</p>
+            {!!draft.links?.length && <div className="space-y-1">{draft.links.map((link) => <div key={link} className="text-[11px] text-primary truncate flex items-center gap-1"><Link2 className="h-3 w-3 shrink-0" />{link}</div>)}</div>}
+          </div>
+
+          <div>
+            <Label className="text-[11px]">Extra content kept with lead</Label>
+            <Textarea value={draft.extraContent ?? ""} onChange={(e) => updateField("extraContent", e.target.value)} className="min-h-20 text-xs" />
           </div>
 
           <div className="text-[11px] text-muted-foreground flex items-center gap-2">
