@@ -92,6 +92,11 @@ function SupplyHubMatch() {
               <Target className="h-4 w-4 text-accent" />
               <h2 className="font-semibold">Top {results.length} matches</h2>
             </div>
+            <div className="rounded-lg border bg-card p-3 grid gap-2 md:grid-cols-3 text-xs">
+              <Cell k="Lead distance input" v={lead.area || "—"} />
+              <Cell k="Nearest Supply Hub PG" v={results.find((r) => r.commuteKm !== null)?.pg.name ?? "Need known area/landmark"} />
+              <Cell k="Lead distance" v={results.find((r) => r.commuteKm !== null)?.commuteKm !== null && results.find((r) => r.commuteKm !== null) ? `${results.find((r) => r.commuteKm !== null)!.commuteKm} km` : "Map/area needed"} />
+            </div>
             <div className="space-y-3">
               {results.map((r) => {
                 const rt = rating(r.total);
@@ -118,7 +123,7 @@ function SupplyHubMatch() {
                     </div>
                     <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
                       <Cell k="Best fit" v={r.bedLabel} />
-                      <Cell k="Commute" v={r.commuteKm !== null ? `${r.commuteKm} km` : "—"} />
+                      <Cell k="Lead distance" v={r.commuteKm !== null ? `${r.commuteKm} km from ${lead.area}` : "Need map/known area"} />
                       <Cell k="Per day" v={r.bedPrice ? perDayLabel(r.bedPrice) : "—"} />
                     </div>
                     <div className="mt-2 text-xs italic text-muted-foreground">{r.reasoning}</div>
