@@ -1,6 +1,10 @@
 import { zones, teamMembers } from './mock-data';
-import { properties } from './properties-seed';
+import { PGS } from '@/supply-hub/data/pgs';
+import { DISTANCE } from '@/supply-hub/data/areas';
+import { matchLead, type Lead as SupplyLead } from '@/supply-hub/lib/matcher';
 import type { Booking, Lead, Room, RoomBlock, Tour } from './types';
+import type { PG } from '@/supply-hub/data/types';
+import { normalizeRoomForSupply } from '@/lib/quickad-shared';
 
 const norm = (v: string) => (v || '').toLowerCase().trim();
 
@@ -9,12 +13,18 @@ export interface InventoryFit {
   propertyName: string;
   zoneId: string;
   area: string;
+  locality?: string;
+  mapsLink?: string;
   availableBeds: number;
   availableRooms: number;
   basePrice: number;
   priceFit: 'inside' | 'stretch' | 'low-fit';
   score: number;
   reason: string;
+  distanceKm: number | null;
+  distanceFromHere: string;
+  distanceFromThere: string;
+  source: 'supply-hub';
 }
 
 export interface AreaOperatingRow {
@@ -32,10 +42,32 @@ export interface AreaOperatingRow {
 
 export function detectAreaZone(areaText: string) {
   const text = norm(areaText);
-  return zones.find((z) => text.includes(norm(z.area)) || norm(z.area).includes(text)) ?? zones[0];
+  const exact = zones.find((z) => text.includes(norm(z.area)) || norm(z.area).includes(text));
+  if (exact) return exact;
+  const pg = PGS.find((p) => text.includes(norm(p.area)) || norm(p.area).includes(text) || norm(p.locality).includes(text));
+  return zones.find((z) => norm(z.area) === norm(pg?.area ?? '')) ?? zones[0];
+}
+
+export const supplyHubProperties = PGS.map((pg) => ({
+  id: pg.id,
+  name: pg.name,
+  zoneId: detectAreaZone(pg.area).id,
+  area: pg.area,
+  address: pg.locality,
+  basePrice: pg.prices.min || pg.prices.double || pg.prices.single || pg.prices.triple || 0,
+  mapsLink: pg.mapsLink,
+  pg,
+}));
+
+export function supplyBedsForPg(pg: PG, blocks: RoomBlock[] = []) {
+  const bedTypes = [pg.prices.single, pg.prices.double, pg.prices.triple].filter((v) => v > 0).length;
+  const activeBlocks = blocks.filter((b) => b.propertyId === pg.id && b.status === 'active' && new Date(b.expiresAt).getTime() > Date.now()).length;
+  return { beds: Math.max(0, bedTypes - activeBlocks), rooms: bedTypes };
 }
 
 export function availableBedsForProperty(propertyId: string, rooms: Room[], blocks: RoomBlock[]) {
+  const supplyPg = PGS.find((p) => p.id === propertyId);
+  if (supplyPg) return supplyBedsForPg(supplyPg, blocks);
   const activeBlocks = new Set(
     blocks
       .filter((b) => b.propertyId === propertyId && b.status === 'active' && new Date(b.expiresAt).getTime() > Date.now())
@@ -57,29 +89,52 @@ export function bestInventoryFits(input: {
 }): InventoryFit[] {
   const zone = detectAreaZone(input.areaText);
   const budget = input.budget || 0;
-  return properties
-    .map((p) => {
-      const inv = availableBedsForProperty(p.id, input.rooms, input.blocks);
-      const exactArea = norm(input.areaText).includes(norm(p.area)) || norm(p.area).includes(norm(input.areaText));
-      const priceDelta = budget ? Math.abs(p.basePrice - budget) / Math.max(1, budget) : 0.2;
-      const priceFit: InventoryFit['priceFit'] = !budget || priceDelta <= 0.15 ? 'inside' : p.basePrice > budget ? 'stretch' : 'low-fit';
-      const score = Math.max(0, Math.round((exactArea ? 45 : p.zoneId === zone.id ? 32 : 8) + Math.min(30, inv.beds * 5) + (priceFit === 'inside' ? 25 : priceFit === 'stretch' ? 12 : 15)));
+  const supplyLead: SupplyLead = {
+    area: input.areaText,
+    gender: 'Any',
+    budgetMin: budget ? Math.max(7000, Math.round(budget * 0.85)) : 7000,
+    budgetMax: budget || 50000,
+    audience: 'Both',
+    occupancy: normalizeRoomForSupply(input.room),
+  };
+  return matchLead(supplyLead)
+    .filter((m) => !m.disqualified && m.total > 0)
+    .map((m) => {
+      const p = m.pg;
+      const inv = supplyBedsForPg(p, input.blocks);
+      const basePrice = m.bedPrice ?? p.prices.min || p.prices.double || p.prices.single || p.prices.triple || 0;
+      const priceDelta = budget ? Math.abs(basePrice - budget) / Math.max(1, budget) : 0.2;
+      const priceFit: InventoryFit['priceFit'] = !budget || priceDelta <= 0.15 ? 'inside' : basePrice > budget ? 'stretch' : 'low-fit';
+      const score = Math.max(0, Math.round(m.total + Math.min(10, inv.beds * 2)));
       return {
         propertyId: p.id,
         propertyName: p.name,
-        zoneId: p.zoneId,
+        zoneId: detectAreaZone(p.area).id,
         area: p.area,
+        locality: p.locality,
+        mapsLink: p.mapsLink,
         availableBeds: inv.beds,
         availableRooms: inv.rooms,
-        basePrice: p.basePrice,
+        basePrice,
         priceFit,
         score,
-        reason: `${inv.beds} beds live · ${priceFit === 'inside' ? 'budget fit' : priceFit === 'stretch' ? 'slight stretch' : 'under budget'} · ${p.area}`,
+        reason: `${inv.beds} Supply Hub beds · ${m.bedLabel} · ${m.commuteKm !== null ? `${m.commuteKm} km` : p.area} · ${priceFit === 'inside' ? 'budget fit' : priceFit === 'stretch' ? 'slight stretch' : 'under budget'}`,
+        distanceKm: m.commuteKm,
+        distanceFromHere: m.commuteKm !== null ? `${p.name} → lead: ${m.commuteKm} km` : `${p.name} → lead: area estimate pending`,
+        distanceFromThere: distanceBetweenAreas(p.area, zone.area),
+        source: 'supply-hub' as const,
       };
     })
     .filter((fit) => fit.availableBeds > 0)
     .sort((a, b) => b.score - a.score || b.availableBeds - a.availableBeds)
     .slice(0, input.limit ?? 3);
+}
+
+function distanceBetweenAreas(fromArea: string, toArea: string) {
+  const fromKey = Object.keys(DISTANCE).find((k) => norm(k) === norm(fromArea) || norm(fromArea).includes(norm(k)));
+  const row = fromKey ? DISTANCE[fromKey] : undefined;
+  const toKey = row ? Object.keys(row).find((k) => norm(k) === norm(toArea) || norm(toArea).includes(norm(k))) : undefined;
+  return toKey && row ? `${fromArea} → ${toArea}: ${row[toKey]} km` : `${fromArea} → ${toArea}: area estimate pending`;
 }
 
 export function recommendedTcm(tours: Tour[], zoneId: string) {
