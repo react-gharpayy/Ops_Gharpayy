@@ -895,3 +895,18 @@ function toLocal(iso: string) {
 function priorityFor(c: number): FollowUpPriority {
   return c >= 75 ? "high" : c >= 50 ? "medium" : "low";
 }
+
+// Salesforce-style activity tab — backed by the new VPS contracts (or local
+// adapter when offline). Auto-logs every system change AND lets the user
+// quickly log calls, emails, WhatsApp, notes, meetings and site visits.
+function LeadActivityTab({ leadId }: { leadId: string }) {
+  const { activities, loading, log, remove } = useActivities({ entityType: "lead", entityId: leadId });
+  return (
+    <div className="space-y-3">
+      <div className="rounded-md border bg-card p-3">
+        <ActivityComposer onLog={log} />
+      </div>
+      <ActivityTimeline activities={activities} loading={loading} onDelete={remove} emptyHint="No activity logged yet. Use the composer above to log a call, message, note, or meeting." />
+    </div>
+  );
+}
