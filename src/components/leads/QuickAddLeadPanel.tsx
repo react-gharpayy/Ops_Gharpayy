@@ -146,9 +146,9 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     rawSource: source?.rawSource,
   });
 
-  const scheduleExisting = (lead: ReturnType<typeof checkDup>["candidates"][number]["lead"]) => {
+  const scheduleExisting = (lead: ReturnType<typeof checkDup>["candidates"][number]["lead"], parsedOverride?: ParsedLeadDraft | null) => {
     onClose();
-    navigate("/myt/schedule", { state: { lead, pastedLead: buildScheduleLead(lastParsed), inventoryFit: areaFit?.fits[0] } });
+    navigate("/myt/schedule", { state: { lead, pastedLead: buildScheduleLead(parsedOverride ?? lastParsed), inventoryFit: areaFit?.fits[0] } });
     toast.info(`Scheduling tour for ${lead.name}`);
   };
 
@@ -236,7 +236,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     const existing = dup.candidates[0]?.lead;
     if (existing && (dup.type === "exact" || dup.type === "strong")) {
       toast.warning(`Existing lead found: ${existing.name}`, {
-        action: { label: "Open Tour", onClick: () => scheduleExisting(existing) },
+        action: { label: "Open Tour", onClick: () => scheduleExisting(existing, parsed) },
       });
       return;
     }
