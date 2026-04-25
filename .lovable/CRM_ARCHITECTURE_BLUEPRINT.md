@@ -196,17 +196,26 @@ Cross-cutting: every committed event → Automation, Analytics, Audit, Socket.IO
 - **Phase 6 — Week 9**: Replay tool, correlationId in toasts, DLQ alerts. Owner module on real backend (invite, media, room edits).
 - **Phase 7 — Week 10+**: Load test 500 cmd/s. Sharding plan at >5M leads. Kafka migration plan. SOC2 audit trail review.
 
-## 14. Open Items (confirm before Phase 0 tickets)
-1. Auth: Auth.js / Clerk / custom JWT?
-2. Atlas region(s) — single or multi?
-3. WhatsApp BSP: Meta direct / Gupshup / 360dialog / Twilio?
-4. Dialer vendor (Exotel/Knowlarity/MyOperator)?
-5. Payment gateway (Razorpay assumed)?
-6. Email (Resend/SES/Postmark)?
-7. Hosting (AWS/GCP/Render/Fly)?
-8. SLA windows in §4 priorities — confirm?
-9. Event log retention (suggest 13mo hot, archive cold)?
-10. TCM scope: any-lead-in-zone vs explicitly-assigned-only?
+## 14. Phase 0 Decisions (LOCKED)
+1. **Auth**: Auth.js (NextAuth core), self-hosted on Fastify. JWT (15min) + refresh (30d) in httpOnly cookies. Mongo `users` + `accounts` + `sessions` collections per Auth.js Mongo adapter. Role/sub-role + scope claims minted at login from `user_roles` collection (separate from users — never embed roles on user doc).
+2. **Region/hosting**: Atlas M10+ in **ap-south-1 (Mumbai)**. API on **AWS ECS Fargate** (Mumbai). **ElastiCache Redis** (Mumbai) for BullMQ + Socket.IO adapter + rate limit. CloudFront + S3 for static. Route53 for DNS.
+3-7. **External integrations**: ALL stubbed for now. Connector interface (`IMessenger`, `IDialer`, `IPayments`, `IMailer`) defined in `packages/contracts` with a `MockConnector` impl. Vendor selection deferred — do NOT scaffold Gupshup/Exotel/Razorpay/Resend code yet. When picked, each connector ships with: client, webhook normalizer → `evt.*`, outbound command, 1+ default automation rule.
+8. **SLAs (locked)**: Hot=15min first response, Warm=2hr, Cold=24hr. Tour reminder = T-2hr. Post-tour report SLA = 30min. Stale lead = no activity 72hr (Warm) / 7d (Cold).
+9. **Retention**: `entity.event` collection — 13 months hot in Atlas, then S3 Glacier cold archive forever (compliance + replay). TTL index on `_archivedAt`, archiver worker runs nightly.
+10. **TCM scope**: Explicitly-assigned-only. TCMs see all leads in their zone (read), can only act on leads where `assignedTcmId === self`. Unassigned zone leads visible in marketplace; claim requires `cmd.lead.claim` (Flow Ops approves OR auto-approve if zone TCM and lead unclaimed > 30min).
+
+## 14b. Stack Summary Card
+| Layer | Choice |
+|---|---|
+| DB | MongoDB Atlas M10, ap-south-1, replica set, point-in-time recovery |
+| API | Fastify + TypeScript, ECS Fargate (2 tasks min), ALB |
+| Auth | Auth.js core + Mongo adapter, JWT15m/refresh30d, RBAC via `user_roles` |
+| Realtime | Socket.IO + `@socket.io/redis-adapter` (ElastiCache) |
+| Jobs | BullMQ + Redis, separate worker service, bull-board behind admin auth |
+| Event bus | Mongo change streams → publisher → Redis pub/sub → Socket.IO + BullMQ |
+| Frontend | Existing TanStack Start app, Zustand stores become WS-driven caches |
+| Shared | `packages/contracts` (zod schemas, event/command enums, RBAC matrix, connector ifaces) |
+| Observability | Pino → CloudWatch, OpenTelemetry → Honeycomb (or Grafana Cloud), DLQ alerts → email + WA stub |
 
 ## 15. Operating Principles (locked)
 1. No mutation outside the command bus. Ever.
