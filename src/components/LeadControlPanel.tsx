@@ -51,6 +51,23 @@ const TEMPLATES = [
   { id: "scarcity", label: "Scarcity", body: "Just a heads-up — only a couple of beds left at this price." },
 ];
 
+type DrawerScheduleAnswers = {
+  bookingSource: string;
+  decisionMaker: string;
+  moveInDate: string;
+  budget: string;
+  occupation: string;
+  workLocation: string;
+  roomType: string;
+  readyIn48h: boolean;
+  exploring: boolean;
+  comparing: boolean;
+  needsFamily: boolean;
+  willBookToday: string;
+  keyConcern: string;
+  tourType: string;
+};
+
 export function LeadControlPanel() {
   const {
     selectedLeadId, selectLead, leads, properties, tours, activities, tcms,
