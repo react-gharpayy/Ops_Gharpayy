@@ -105,7 +105,7 @@ export function buildAreaOperatingRows(input: { leads: Lead[]; tours: Tour[]; ro
     const toursToday = input.tours.filter((t) => t.zoneId === z.id && t.tourDate === today && t.status !== 'cancelled').length;
     const bookings = input.bookings.filter((b) => norm(b.area) === norm(z.area)).length;
     const tcmCapacity = Math.max(0, teamMembers.filter((m) => m.role === 'tcm' && m.zoneId === z.id).length * 8 - toursToday);
-    const signal: AreaOperatingRow['signal'] = availableBeds >= 8 && leads < 3 ? 'push-demand' : leads >= 3 && toursToday < Math.min(leads.length, 4) ? 'push-tours' : tcmCapacity < 2 ? 'protect-capacity' : 'balanced';
+    const signal: AreaOperatingRow['signal'] = availableBeds >= 8 && leads.length < 3 ? 'push-demand' : leads.length >= 3 && toursToday < Math.min(leads.length, 4) ? 'push-tours' : tcmCapacity < 2 ? 'protect-capacity' : 'balanced';
     const nextAction = signal === 'push-demand'
       ? `Create demand for ${availableBeds} live beds`
       : signal === 'push-tours'
