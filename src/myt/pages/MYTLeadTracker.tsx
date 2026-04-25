@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppState } from '@/myt/lib/app-context';
 import { zones, teamMembers } from '@/myt/lib/mock-data';
 import { Lead } from '@/myt/lib/types';
@@ -22,7 +22,11 @@ export default function MYTLeadTracker() {
   const [showForm, setShowForm] = useState(false);
   const [showParserTest, setShowParserTest] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const { open: openPip, close: closePip, active: pipActive, supported: pipSupported } = usePip();
+  const { open: openPip, close: closePip, active: pipActive, supported: pipSupportedRaw } = usePip();
+  const [pipMounted, setPipMounted] = useState(false);
+  useEffect(() => { setPipMounted(true); }, []);
+  // SSR-safe: assume supported until mounted, so server + first-client paint match.
+  const pipSupported = pipMounted ? pipSupportedRaw : true;
   const [form, setForm] = useState({
     name: '', phone: '', area: '', budget: '10000',
     moveInDate: '', dateConfirmed: false,
