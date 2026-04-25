@@ -4,10 +4,15 @@ import { useApp } from "@/lib/store";
 import { ConfidenceBar, IntentChip, StageBadge } from "@/components/atoms";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import type { LeadStage } from "@/lib/types";
 import { useMountedNow } from "@/hooks/use-now";
+import { LeadPasteParser } from "@/components/leads/LeadPasteParser";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/leads")({
   head: () => ({
@@ -17,11 +22,12 @@ export const Route = createFileRoute("/leads")({
 });
 
 function LeadsPage() {
-  const { leads, tcms, selectLead } = useApp();
+  const { leads, tcms, selectLead, addLead } = useApp();
   const [, mounted] = useMountedNow();
   const [q, setQ] = useState("");
   const [stage, setStage] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"confidence" | "moveIn" | "updated">("confidence");
+  const [pasteOpen, setPasteOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const list = leads.filter((l) => {
