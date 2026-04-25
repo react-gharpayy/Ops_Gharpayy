@@ -52,6 +52,38 @@ function LeadsPage() {
             <p className="text-sm text-muted-foreground">{filtered.length} of {leads.length} · ranked by deal probability</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Dialog open={pasteOpen} onOpenChange={setPasteOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1.5 h-9"><Wand2 className="h-3.5 w-3.5" /> Paste lead</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>Paste a lead — auto-extract fields</DialogTitle></DialogHeader>
+                <LeadPasteParser onSubmit={async (payload) => {
+                  const now = new Date().toISOString();
+                  addLead({
+                    id: `lead-${Date.now()}`,
+                    name: payload.name,
+                    phone: payload.phone,
+                    source: payload.source ?? "paste",
+                    budget: payload.budget,
+                    moveInDate: payload.moveInDate,
+                    preferredArea: payload.preferredArea,
+                    assignedTcmId: tcms[0]?.id ?? "",
+                    stage: "new",
+                    intent: payload.intent ?? "warm",
+                    confidence: 50,
+                    tags: payload.tags ?? [],
+                    nextFollowUpAt: null,
+                    responseSpeedMins: 0,
+                    createdAt: now,
+                    updatedAt: now,
+                  });
+                  toast.success(`Lead added: ${payload.name}`);
+                  setPasteOpen(false);
+                  return { ok: true, eventIds: [] };
+                }} />
+              </DialogContent>
+            </Dialog>
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or phone…" className="h-9 w-56 text-sm" />
             <Select value={stage} onValueChange={setStage}>
               <SelectTrigger className="h-9 w-44 text-sm"><SelectValue /></SelectTrigger>
