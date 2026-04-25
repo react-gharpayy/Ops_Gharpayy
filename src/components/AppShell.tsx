@@ -159,7 +159,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isActive = (to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(to + "/"));
 
   return (
-    <div className="min-h-screen flex w-full bg-background text-foreground">
+    <PictureInPictureProvider>
+      <div className="min-h-screen flex w-full bg-background text-foreground">
       {/* Sidebar */}
       <aside className="hidden md:flex w-[240px] flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border sticky top-0 h-screen">
         <div className="px-5 py-5 flex items-center gap-2 border-b border-sidebar-border">
@@ -281,12 +282,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             </kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">
+            <PipButton />
             <NotificationCenter role={role} />
             <ProfileMenu />
           </div>
         </header>
 
-        <main className="flex-1 w-full max-w-[1400px] mx-auto p-4 pb-24 md:p-6 md:pb-6">{children}</main>
+        <PipMount>
+          <main className="flex-1 w-full max-w-[1400px] mx-auto p-4 pb-24 md:p-6 md:pb-6">{children}</main>
+        </PipMount>
       </div>
 
       <nav
