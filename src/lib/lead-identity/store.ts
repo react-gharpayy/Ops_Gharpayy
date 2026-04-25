@@ -26,7 +26,18 @@ interface IdentityStore {
   checkDuplicates: (draft: Partial<ParsedLeadDraft>) => MatchResult;
 
   /** Create a new unified lead from a parsed draft. Caller has already resolved dedup. */
-  createLead: (draft: ParsedLeadDraft, opts?: { ownerId?: string; ownerName?: string }) => UnifiedLead;
+  createLead: (
+    draft: ParsedLeadDraft,
+    opts?: {
+      ownerId?: string;
+      ownerName?: string;
+      quality?: import("./types").LeadQuality;
+      stage?: string;
+      assigneeId?: string | null;
+      assigneeName?: string | null;
+      zoneCategory?: string;
+    },
+  ) => UnifiedLead;
 
   /** Append an activity to a lead's timeline. */
   logActivity: (ulid: string, kind: ActivityKind, text: string, meta?: Record<string, unknown>) => void;
@@ -78,7 +89,14 @@ export const useIdentityStore = create<IdentityStore>()(
           email: draft.email,
           emailNorm: normalizeEmail(draft.email),
           area: draft.location,
+          areas: draft.areas,
+          fullAddress: draft.fullAddress,
           zone: draft.zone,
+          zoneCategory: opts?.zoneCategory,
+          quality: opts?.quality ?? null,
+          stage: opts?.stage,
+          assigneeId: opts?.assigneeId ?? null,
+          assigneeName: opts?.assigneeName ?? null,
           budget: parseBudgetToNumber(draft.budget),
           moveInDate: draft.moveIn,
           type: draft.type,
