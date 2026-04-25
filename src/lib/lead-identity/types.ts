@@ -13,6 +13,8 @@ export type LifecycleState =
 
 export type MatchType = "exact" | "strong" | "possible" | "new";
 
+export type LeadQuality = "hot" | "good" | "bad" | null;
+
 export interface UnifiedLead {
   ulid: string;                 // Universal Lead ID
   name: string;
@@ -21,7 +23,14 @@ export interface UnifiedLead {
   email: string;
   emailNorm: string;
   area: string;
-  zone: string;                 // South / East / North / West / Central / ""
+  areas?: string[];             // multi-area tokens (HSR, BTM, …)
+  fullAddress?: string;         // long-form address / map link
+  zone: string;                 // South / East / North / West / Central / "" or categorical bucket
+  zoneCategory?: string;        // editor-chosen bucket (e.g. "KORA CORE")
+  quality?: LeadQuality;        // hot / good / bad
+  stage?: string;               // Lead stage label (MYT [TENANT], etc.)
+  assigneeId?: string | null;
+  assigneeName?: string | null;
   budget: number;
   moveInDate: string;
   type: string;                 // Student / Working / etc
@@ -106,6 +115,10 @@ export interface ParsedLeadDraft {
   phone: string;
   email: string;
   location: string;
+  /** Distinct area tokens detected in the location/address text (e.g. ["HSR Layout","BTM"]). */
+  areas: string[];
+  /** Full address / map link / long-form location string when present. */
+  fullAddress: string;
   budget: string;        // raw budget text
   moveIn: string;        // raw move-in text
   type: string;

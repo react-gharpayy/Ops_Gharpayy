@@ -20,7 +20,8 @@ interface Props {
 }
 
 const emptyDraft = (): ParsedLeadDraft => ({
-  name: "", phone: "", email: "", location: "", budget: "", moveIn: "",
+  name: "", phone: "", email: "", location: "", areas: [], fullAddress: "",
+  budget: "", moveIn: "",
   type: "", room: "", need: "", specialReqs: "", inBLR: null, zone: "", rawSource: "",
 });
 

@@ -97,6 +97,16 @@ export default function MYTLeadTracker() {
             <PictureInPicture2 className="h-3.5 w-3.5" />
             {pipActive ? "Exit PiP" : "Open PiP"}
           </Button>
+          <Button
+            size="sm"
+            variant="default"
+            onClick={async () => { if (!pipActive && pipSupported) await openPip(); setShowQuickAdd(true); }}
+            disabled={!pipSupported && !pipActive}
+            className="h-8 text-xs gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90"
+            title="Open PiP and immediately start adding a lead inside the floating window"
+          >
+            <PictureInPicture2 className="h-3.5 w-3.5" /> PiP + Add Lead
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setShowQuickAdd(true)} className="h-8 text-xs gap-1.5">
             <Zap className="h-3.5 w-3.5" /> Quick Add
           </Button>
