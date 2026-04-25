@@ -81,7 +81,7 @@ export function useNavigate() {
         return;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      nav({ to: to as any, replace: opts?.replace } as any);
+      nav({ to: to as any, replace: opts?.replace, state: opts?.state } as any);
     },
     [nav],
   );

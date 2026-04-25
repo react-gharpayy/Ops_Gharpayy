@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, Plus, Phone, ArrowRight, Sparkles, PictureInPicture2, FlaskConical, Zap, Info } from 'lucide-react';
 import { useNavigate } from '@/shims/react-router-dom';
-import { PasteToLead } from '@/components/leads/PasteToLead';
 import { RequestAccessSheet } from '@/components/leads/RequestAccessSheet';
 import { useIdentityStore } from '@/lib/lead-identity/store';
 import { ParserTestModal } from '@/components/leads/ParserTestModal';
@@ -18,7 +17,7 @@ import { usePip } from '@/components/pip/PipProvider';
 export default function MYTLeadTracker() {
   const { leads, setLeads, currentMemberId } = useAppState();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<'paste' | 'manual' | 'requests'>('paste');
+  const [mode, setMode] = useState<'quick' | 'manual' | 'requests'>('quick');
   const identityLeadCount = useIdentityStore((s) => s.leads.length);
   const [showForm, setShowForm] = useState(false);
   const [showParserTest, setShowParserTest] = useState(false);
@@ -142,8 +141,8 @@ export default function MYTLeadTracker() {
 
       {/* Mode tabs */}
       <div className="flex gap-1 rounded-lg border border-border p-0.5 bg-surface-2/50 w-fit">
-        <button onClick={() => setMode('paste')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'paste' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-          <Sparkles className="h-3 w-3 inline mr-1" />Paste
+        <button onClick={() => setMode('quick')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'quick' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+          <Sparkles className="h-3 w-3 inline mr-1" />Quick Add
         </button>
         <button onClick={() => setMode('manual')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'manual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
           Manual
@@ -170,7 +169,17 @@ export default function MYTLeadTracker() {
         </div>
       </div>
 
-      {mode === 'paste' && <PasteToLead />}
+      {mode === 'quick' && (
+        <div className="glass-card p-4 space-y-3">
+          <div>
+            <h3 className="font-heading font-semibold text-sm text-foreground">Unified Quick Add</h3>
+            <p className="text-xs text-muted-foreground">All pasted leads now go through Quick Add questions only, so paste/manual/dedup data stays one object.</p>
+          </div>
+          <Button onClick={() => setShowQuickAdd(true)} className="w-full gap-1.5">
+            <Zap className="h-3.5 w-3.5" /> Open Quick Add
+          </Button>
+        </div>
+      )}
       {mode === 'requests' && <RequestAccessSheet />}
       {mode === 'manual' && (
         <div className="flex justify-end">

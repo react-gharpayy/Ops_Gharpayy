@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DirectLeadForm } from "@/components/leads/DirectLeadForm";
-import { PasteToLead } from "@/components/leads/PasteToLead";
+import { QuickAddLeadPanel } from "@/components/leads/QuickAddLeadPanel";
 import { RequestAccessSheet } from "@/components/leads/RequestAccessSheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useIdentityStore } from "@/lib/lead-identity/store";
-import { Shield } from "lucide-react";
+import { Shield, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/leads/add")({
   head: () => ({
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/leads/add")({
 
 function AddLeadPage() {
   const totalLeads = useIdentityStore((s) => s.leads.length);
+  const [quickAddOpen, setQuickAddOpen] = useState(true);
   return (
     <AppShell>
       <div className="space-y-4 max-w-3xl mx-auto">
@@ -31,19 +34,30 @@ function AddLeadPage() {
           </div>
         </header>
 
-        <Tabs defaultValue="paste" className="space-y-4">
+        <Tabs defaultValue="quick" className="space-y-4">
           <TabsList>
-              <TabsTrigger value="paste">Paste-to-add</TabsTrigger>
+            <TabsTrigger value="quick">Quick Add</TabsTrigger>
             <TabsTrigger value="single">Single lead</TabsTrigger>
-              <TabsTrigger value="geo">Geo-intelligence</TabsTrigger>
+            <TabsTrigger value="geo">Geo-intelligence</TabsTrigger>
             <TabsTrigger value="requests">Access requests</TabsTrigger>
           </TabsList>
-            <TabsContent value="paste"><PasteToLead /></TabsContent>
+          <TabsContent value="quick">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" /> Quick Add is the only paste flow
+                </h2>
+                <p className="text-sm text-muted-foreground">Paste into any Quick Add field and it auto-fills the same lead questions, dedups, and keeps geo data together.</p>
+              </div>
+              <Button onClick={() => setQuickAddOpen(true)} className="w-full">Open Quick Add</Button>
+            </div>
+          </TabsContent>
           <TabsContent value="single"><DirectLeadForm /></TabsContent>
-            <TabsContent value="geo"><GeoIntelligenceGuide /></TabsContent>
+          <TabsContent value="geo"><GeoIntelligenceGuide /></TabsContent>
           <TabsContent value="requests"><RequestAccessSheet /></TabsContent>
         </Tabs>
       </div>
+      <QuickAddLeadPanel open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
     </AppShell>
   );
 }
