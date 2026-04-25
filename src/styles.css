@@ -156,3 +156,26 @@
   .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
 }
+
+@layer utilities {
+  .pip-compact input,
+  .pip-compact textarea,
+  .pip-compact select,
+  .pip-compact button {
+    font-size: 12px;
+  }
+  [data-pip-mode="capture"] .pip-compact,
+  [data-pip-mode="manage"] .pip-compact {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  [data-pip-mode="dashboard"] aside,
+  [data-pip-mode="dashboard"] nav.fixed,
+  [data-pip-mode="dashboard"] header.sticky {
+    display: none !important;
+  }
+  [data-pip-mode="dashboard"] main {
+    padding: 12px !important;
+    max-width: none !important;
+  }
+}
