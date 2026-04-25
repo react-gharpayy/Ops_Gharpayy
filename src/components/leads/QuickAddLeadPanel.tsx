@@ -20,8 +20,9 @@ import { useIdentityStore } from "@/lib/lead-identity/store";
 import { detectZone, parseLead } from "@/lib/lead-identity/parser";
 import { teamMembers } from "@/myt/lib/mock-data";
 import { toast } from "sonner";
-import { Save, Repeat2, Phone, MapPin, Sparkles, X } from "lucide-react";
+import { Save, Repeat2, Phone, MapPin, Sparkles, X, CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "@/shims/react-router-dom";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -63,6 +64,7 @@ const BLR_OPTS = [
 export function QuickAddLeadPanel({ open, onClose }: Props) {
   const checkDup = useIdentityStore((s) => s.checkDuplicates);
   const create = useIdentityStore((s) => s.createLead);
+  const navigate = useNavigate();
 
   // Core
   const [name, setName] = useState("");
@@ -102,6 +104,12 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     setTimeout(() => nameRef.current?.focus(), 30);
   };
 
+  const scheduleExisting = (lead: ReturnType<typeof checkDup>["candidates"][number]["lead"]) => {
+    onClose();
+    navigate("/myt/schedule", { state: { lead } });
+    toast.info(`Scheduling tour for ${lead.name}`);
+  };
+
   const save = (keepOpen: boolean) => {
     if (!name.trim() || !phone.replace(/\D/g, "").match(/^[6-9]\d{9}$/)) {
       toast.error("Need a name and a valid 10-digit phone");
@@ -109,7 +117,12 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     }
     const dup = checkDup({ name, phone, email, location: areasText });
     if (dup.type === "exact" || dup.type === "strong") {
-      toast.warning(`Duplicate detected: ${dup.candidates[0]?.lead.name}`);
+      const existing = dup.candidates[0]?.lead;
+      toast.warning(`Duplicate detected: ${existing?.name}`, {
+        action: existing
+          ? { label: "Schedule tour", onClick: () => scheduleExisting(existing) }
+          : undefined,
+      });
       return;
     }
     const areasArr = areasText.split(",").map((a) => a.trim()).filter(Boolean);
@@ -126,6 +139,9 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
         moveIn,
         type, room, need,
         specialReqs: [specialReqs, notes].filter(Boolean).join(" · "),
+        extraContent: notes.trim(),
+        budgets: budget.split(/\s*(?:,|\/|\bor\b)\s*/i).filter(Boolean),
+        links: fullAddress.match(/https?:\/\/\S+/g) ?? [],
         inBLR,
         zone: detectedZone,
         rawSource: `[QuickAdd] ${name} ${phone}`,
@@ -335,6 +351,19 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
             </Button>
             <Button onClick={() => save(false)} size="sm" className="flex-1 gap-1.5">
               <Save className="h-3.5 w-3.5" /> Save
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const dup = checkDup({ name, phone, email, location: areasText });
+                const existing = dup.candidates[0]?.lead;
+                if (existing) scheduleExisting(existing);
+                else toast.error("No existing lead found to schedule");
+              }}
+              className="gap-1.5"
+            >
+              <CalendarPlus className="h-3.5 w-3.5" /> Tour
             </Button>
             <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5">
               <X className="h-3.5 w-3.5" />
