@@ -14,15 +14,23 @@ import { autoAssignTcm } from '@/myt/lib/auto-assign';
 import { createBlockForTour } from '@/myt/lib/blocks';
 import { ConfidenceBar } from '@/myt/components/ConfidenceBar';
 import { SlotPicker, getTakenSlotsForDate } from '@/myt/components/SlotPicker';
-import { Building2, Video, Briefcase, Sparkles } from 'lucide-react';
+import { Building2, Video, Briefcase, Sparkles, Bug, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendTourMessage, logTourEvent } from '@/myt/lib/tour-messages';
 import { useLocation } from '@/shims/react-router-dom';
 import { useIdentityStore } from '@/lib/lead-identity/store';
+import { availableBedsForProperty, bestInventoryFits, detectAreaZone } from '@/myt/lib/inventory-intelligence';
 import type { InventoryFit } from '@/myt/lib/inventory-intelligence';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 const in7days = () => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; };
+const parseBudgetAmount = (value: unknown) => {
+  const raw = String(value ?? '').toLowerCase().replace(/,/g, ' ');
+  const matches = [...raw.matchAll(/(\d+(?:\.\d+)?)\s*(k|000)?/g)]
+    .map((m) => Math.round(Number(m[1]) * (m[2] === 'k' ? 1000 : m[2] === '000' ? 1000 : Number(m[1]) <= 80 ? 1000 : 1)))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return matches.length ? Math.max(...matches) : 0;
+};
 
 const roomTypes = ['Single', 'Double Sharing', 'Triple Sharing', 'Studio'];
 
@@ -36,6 +44,10 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
   const location = useLocation();
   const setLifecycleState = useIdentityStore((s) => s.setLifecycleState);
   const currentTcmName = storeTcms.find((t) => t.id === currentTcmId)?.name;
+  const routeState = useMemo(() => location.state as { lead?: Record<string, unknown>; pastedLead?: Record<string, unknown>; inventoryFit?: InventoryFit } | null, [location.state]);
+  const incomingLead = routeState?.lead;
+  const pastedLead = routeState?.pastedLead;
+  const incomingFit = routeState?.inventoryFit;
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState({
@@ -73,17 +85,16 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
   }, [role, currentTcmName, form.assignedTo]);
 
   useEffect(() => {
-    const routeState = location.state as { lead?: Record<string, unknown>; inventoryFit?: InventoryFit } | null;
-    const stateLead = routeState?.lead;
+    const stateLead = incomingLead;
     if (!stateLead) return;
-    const leadName = String(stateLead.name ?? '');
-    const phone = String(stateLead.phone ?? stateLead.phoneRaw ?? stateLead.phoneE164 ?? '');
-    const moveIn = String(stateLead.moveInDate ?? '');
-    const budget = String(stateLead.budget ?? '12000').replace(/\D/g, '') || '12000';
-    const area = String(stateLead.area ?? stateLead.location ?? stateLead.fullAddress ?? '');
-    const room = String(stateLead.room ?? stateLead.roomType ?? 'Single').toLowerCase();
-    const type = String(stateLead.type ?? '');
-    const notes = String(stateLead.notes ?? stateLead.extraContent ?? '');
+    const leadName = String(stateLead.name ?? pastedLead?.name ?? '');
+    const phone = String(stateLead.phone ?? stateLead.phoneRaw ?? stateLead.phoneE164 ?? pastedLead?.phone ?? '');
+    const moveIn = String(pastedLead?.moveInDate ?? stateLead.moveInDate ?? '');
+    const budget = String(parseBudgetAmount(pastedLead?.budget ?? stateLead.budget) || 12000);
+    const area = String(pastedLead?.area ?? pastedLead?.location ?? pastedLead?.fullAddress ?? stateLead.area ?? stateLead.location ?? stateLead.fullAddress ?? '');
+    const room = String(pastedLead?.room ?? stateLead.room ?? stateLead.roomType ?? 'Single').toLowerCase();
+    const type = String(pastedLead?.type ?? stateLead.type ?? '');
+    const notes = String(pastedLead?.specialReqs ?? pastedLead?.extraContent ?? stateLead.notes ?? stateLead.extraContent ?? '');
     setForm((f) => ({
       ...f,
       leadName: leadName || f.leadName,
@@ -94,11 +105,11 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
       occupation: type || f.occupation,
       roomType: room.includes('private') ? 'Single' : room.includes('shared') ? 'Double Sharing' : f.roomType,
       keyConcern: notes || f.keyConcern,
-      zoneId: routeState?.inventoryFit?.zoneId || f.zoneId,
-      propertyName: routeState?.inventoryFit?.propertyName || f.propertyName,
-      assignedTo: routeState?.inventoryFit ? '' : f.assignedTo,
+      zoneId: incomingFit?.zoneId || f.zoneId,
+      propertyName: incomingFit?.propertyName || f.propertyName,
+      assignedTo: incomingFit ? '' : f.assignedTo,
     }));
-  }, [location.state]);
+  }, [incomingLead, pastedLead, incomingFit]);
 
   const qualification: TourQualification = useMemo(() => ({
     moveInDate: form.moveInDate,
