@@ -24,7 +24,7 @@ import { LeadDossierPanel } from "./crm10x/LeadDossierPanel";
 import {
   Phone, MessageSquare, Calendar as CalendarIcon, Tag, ClipboardCheck,
   AlertTriangle, CheckCircle2, X, Activity as ActivityIcon, MapPin,
-  Wallet, Send, Zap, IndianRupee, BellRing, ExternalLink,
+  Wallet, Send, Zap, IndianRupee, BellRing, ExternalLink, Plus,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { LeadStage, FollowUpPriority, SequenceKind } from "@/lib/types";
@@ -103,6 +103,13 @@ export function LeadControlPanel() {
     scheduleTour({ leadId: lead.id, propertyId, tcmId, scheduledAt: new Date(scheduledAt).toISOString() });
     setPropertyId(""); setTcmId(""); setScheduledAt("");
     toast.success("Tour scheduled");
+  };
+
+  const startAnotherTour = () => {
+    setPropertyId("");
+    setTcmId(lead.assignedTcmId ?? "");
+    setScheduledAt("");
+    setTab("tour");
   };
 
   return (
@@ -351,6 +358,11 @@ export function LeadControlPanel() {
 
             {/* TOUR */}
             <TabsContent value="tour" className="space-y-4 pt-4">
+              {leadTours.length > 0 && (
+                <Button variant="secondary" size="sm" className="w-full gap-1.5" onClick={startAnotherTour}>
+                  <Plus className="h-3.5 w-3.5" /> Schedule another Tour for this lead
+                </Button>
+              )}
               {upcomingTour ? (
                 <Section title="Upcoming tour">
                   <UpcomingTourCard
@@ -393,22 +405,18 @@ export function LeadControlPanel() {
                   />
                 </Section>
               ) : (
-                <Section title="Schedule tour">
-                  <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center space-y-3">
-                    <CalendarIcon className="h-6 w-6 mx-auto text-muted-foreground" />
-                    <div className="text-xs text-muted-foreground">
-                      Tours are scheduled in one place — the Schedule Tour console runs the
-                      qualification scorecard, picks the best slot and auto-blocks the room.
-                    </div>
-                    <Link
-                      to="/myt/schedule"
-                      onClick={() => selectLead(null)}
-                      className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:bg-accent/90 transition-colors w-full"
-                    >
-                      <CalendarIcon className="h-4 w-4" /> Open Schedule Tour
-                    </Link>
-                  </div>
-                </Section>
+                <InlineScheduleTour
+                  leadName={lead.name}
+                  properties={properties}
+                  tcms={tcms}
+                  propertyId={propertyId}
+                  tcmId={tcmId}
+                  scheduledAt={scheduledAt}
+                  onPropertyChange={setPropertyId}
+                  onTcmChange={setTcmId}
+                  onScheduledAtChange={setScheduledAt}
+                  onSchedule={handleSchedule}
+                />
               )}
 
               {leadTours.length > 1 && (
@@ -706,6 +714,50 @@ function UpcomingTourCard({
         <Button size="sm" className="flex-1" onClick={onComplete}>Mark complete</Button>
       </div>
     </div>
+  );
+}
+
+function InlineScheduleTour({
+  leadName, properties, tcms, propertyId, tcmId, scheduledAt,
+  onPropertyChange, onTcmChange, onScheduledAtChange, onSchedule,
+}: {
+  leadName: string;
+  properties: import("@/lib/types").Property[];
+  tcms: import("@/lib/types").TCM[];
+  propertyId: string;
+  tcmId: string;
+  scheduledAt: string;
+  onPropertyChange: (value: string) => void;
+  onTcmChange: (value: string) => void;
+  onScheduledAtChange: (value: string) => void;
+  onSchedule: () => void;
+}) {
+  return (
+    <Section title="Schedule Tour in drawer">
+      <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+        <div className="text-xs text-muted-foreground">Lead is already known: <span className="font-medium text-foreground">{leadName}</span>. Add as many Tours as needed without re-entering phone or QuickAD answers.</div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Property</Label>
+            <Select value={propertyId} onValueChange={onPropertyChange}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select property" /></SelectTrigger>
+              <SelectContent>{properties.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} · {p.area}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">TCM</Label>
+            <Select value={tcmId} onValueChange={onTcmChange}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select TCM" /></SelectTrigger>
+              <SelectContent>{tcms.map((t) => <SelectItem key={t.id} value={t.id}>{t.name} · {t.zone}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <Input type="datetime-local" value={scheduledAt} onChange={(e) => onScheduledAtChange(e.target.value)} className="h-9 text-sm" />
+          <Button size="sm" onClick={onSchedule} className="gap-1.5"><CalendarIcon className="h-3.5 w-3.5" /> Schedule Tour</Button>
+        </div>
+      </div>
+    </Section>
   );
 }
 

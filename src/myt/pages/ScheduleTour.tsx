@@ -14,14 +14,14 @@ import { autoAssignTcm } from '@/myt/lib/auto-assign';
 import { createBlockForTour } from '@/myt/lib/blocks';
 import { ConfidenceBar } from '@/myt/components/ConfidenceBar';
 import { SlotPicker, getTakenSlotsForDate } from '@/myt/components/SlotPicker';
-import { Building2, Video, Briefcase, Sparkles, Bug, MapPin } from 'lucide-react';
+import { Building2, Video, Briefcase, Sparkles, Bug, MapPin, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendTourMessage, logTourEvent } from '@/myt/lib/tour-messages';
 import { useLocation } from '@/shims/react-router-dom';
 import { useIdentityStore } from '@/lib/lead-identity/store';
 import { availableBedsForProperty, bestInventoryFits, detectAreaZone, supplyHubProperties } from '@/myt/lib/inventory-intelligence';
 import type { InventoryFit } from '@/myt/lib/inventory-intelligence';
-import { normalizeRoomForTour, parseBudgetAmount } from '@/lib/quickad-shared';
+import { QUICKAD_QUESTIONS, normalizeRoomForTour, parseBudgetAmount } from '@/lib/quickad-shared';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 const in7days = () => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; };
@@ -224,6 +224,21 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
     ...((pastedLead?.links as string[] | undefined) ?? []),
     ...String(pastedLead?.fullAddress ?? incomingLead?.fullAddress ?? '').match(/https?:\/\/\S+/g) ?? [],
   ];
+  const unifiedFieldValues: Record<string, string> = {
+    name: form.leadName,
+    phone: form.phone,
+    email: String(pastedLead?.email ?? incomingLead?.email ?? ''),
+    areas: String(pastedLead?.area ?? pastedLead?.areas ?? incomingLead?.area ?? form.workLocation ?? ''),
+    fullAddress: String(pastedLead?.fullAddress ?? incomingLead?.fullAddress ?? ''),
+    budget: form.budget,
+    moveIn: form.moveInDate,
+    type: form.occupation,
+    room: form.roomType,
+    need: String(pastedLead?.need ?? incomingLead?.need ?? ''),
+    specialReqs: form.keyConcern,
+    inBLR: String(pastedLead?.inBLR ?? incomingLead?.inBLR ?? ''),
+  };
+  const missingUnifiedFields = QUICKAD_QUESTIONS.filter((q) => !String(unifiedFieldValues[q.key] ?? '').trim());
 
   return (
     <div className="space-y-4 animate-slide-up max-w-3xl">
@@ -281,6 +296,27 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
           <div className="flex items-start gap-1.5"><MapPin className="h-3 w-3 mt-0.5 text-primary" /> From here: {selectedProperty ? `${selectedProperty.address} → ${debugAreaText || 'lead location'}` : 'select property to compare'}</div>
           <div className="flex items-start gap-1.5"><MapPin className="h-3 w-3 mt-0.5 text-primary" /> From there: {debugLinks[0] ? `map link captured (${debugLinks.length})` : 'no map link captured yet'}</div>
         </div>
+      </div>
+
+      <div className={cn('rounded-lg border p-3 space-y-2', missingUnifiedFields.length ? 'border-warning/40 bg-warning/10' : 'border-success/30 bg-success/5')}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            {missingUnifiedFields.length ? <AlertTriangle className="h-4 w-4 text-warning" /> : <CheckCircle2 className="h-4 w-4 text-success" />}
+            QuickAD sync check
+          </div>
+          <Badge variant="secondary" className="text-[10px]">{QUICKAD_QUESTIONS.length - missingUnifiedFields.length}/{QUICKAD_QUESTIONS.length} synced</Badge>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {QUICKAD_QUESTIONS.map((q) => {
+            const ok = String(unifiedFieldValues[q.key] ?? '').trim().length > 0;
+            return (
+              <span key={q.key} className={cn('rounded-md border px-2 py-1 text-[10px]', ok ? 'border-success/30 bg-success/10 text-success' : 'border-warning/40 bg-warning/10 text-warning')}>
+                {ok ? '✓' : '!'} {q.label}
+              </span>
+            );
+          })}
+        </div>
+        {missingUnifiedFields.length > 0 && <p className="text-[11px] text-muted-foreground">Missing: {missingUnifiedFields.map((q) => q.label).join(', ')}. Existing duplicate fields stay prefilled; only these gaps need attention.</p>}
       </div>
 
       {/* Stepper */}
