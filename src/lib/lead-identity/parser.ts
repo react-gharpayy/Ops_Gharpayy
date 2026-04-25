@@ -359,10 +359,36 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
 
   const zone = detectZone(normalised);
 
+  // Extract distinct area tokens from the captured location + raw text
+  const areaPool = `${location} ${normalised}`.toLowerCase();
+  const areaSet = new Set<string>();
+  for (const z of ZONES) {
+    for (const kw of z.keywords) {
+      if (kw.length < 4) continue;
+      if (areaPool.includes(kw)) {
+        // canonical-case version
+        areaSet.add(kw.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "));
+      }
+    }
+  }
+  const areas = [...areaSet].slice(0, 6);
+
+  // Full address = map link / URL OR location lines >60 chars OR explicit "Full Address" label
+  let fullAddress = "";
+  const urlMatch = normalised.match(/https?:\/\/\S+/);
+  if (urlMatch) fullAddress = urlMatch[0];
+  if (!fullAddress) {
+    const longLine = normalised.split("\n").map((l) => l.trim()).find((l) => l.length > 60 && /\d/.test(l) && !/@/.test(l));
+    if (longLine) fullAddress = longLine;
+  }
+  const labeledFull = grab(/Full\s*Address\s*[:\-–]+\s*([^\n]{5,300})/i);
+  if (labeledFull) fullAddress = labeledFull;
+
   if (!phone && !email && !name) return null;
 
   return {
-    name, phone, email, location, budget, moveIn,
+    name, phone, email, location, areas, fullAddress,
+    budget, moveIn,
     type, room, need, specialReqs, inBLR, zone,
     rawSource: raw,
   };
