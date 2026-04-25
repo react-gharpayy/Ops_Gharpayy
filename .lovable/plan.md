@@ -5,6 +5,7 @@
 Make the CRM feel like each user owns their work, while the system manages the routing underneath:
 
 - Every pasted lead is instantly matched to available inventory in the requested area.
+- Inventory must come from Supply Hub PG data only; no random property creation for matching.
 - Every Flow Ops person gets a different area/goal board.
 - Every TCM gets a different tour-closing board based on their zone and assigned supply.
 - HR sees whether Flow Ops, TCMs, and Owners are producing results.
@@ -31,6 +32,8 @@ Upgrade Quick Add so it does not just parse a lead; it immediately answers:
 Inside `QuickAddLeadPanel`:
 
 - Keep paste-first zero-click parsing.
+- Quick Add is the single paste flow; copied lead data must sync into the QuickAD question set, not a separate Paste Lead flow.
+- Quick Add and Schedule Tour must reuse the same questions: name, phone, email, areas, full address/map link, budget, move-in, type, room, need, special requests, and in-BLR.
 - After parsing, show an “Area Inventory Fit” block above the form:
   - requested areas
   - matching properties
@@ -43,6 +46,7 @@ Inside `QuickAddLeadPanel`:
 - If duplicate found, show only one decision point:
   - “Use existing lead and schedule Tour”
   - no phone refill, no repeated questions.
+- Existing lead → Tour must carry the stored lead plus the fresh parsed QuickAD answers into Schedule Tour.
 
 ## 2. Area-personalized Flow Ops boards
 
@@ -185,6 +189,7 @@ For every parsed lead:
 - pull parsed location
 - pull map links
 - detect areas/landmarks
+- use Supply Hub PG coordinates, area centroids, and matcher distances for lead distance
 - show “distance from lead location to matched inventory”
 - show “distance from there to here” for common travel/area comparison
 - show confidence:
@@ -277,7 +282,8 @@ Use current local stores/mock data first. No cloud/database tool is required for
 After implementation:
 
 - Run TypeScript/build validation.
-- Test Quick Add paste → inventory match → duplicate → Tour scheduling.
+- Test Quick Add paste → QuickAD fields → Supply Hub inventory match → duplicate → Tour scheduling.
+- Verify Schedule Tour debug shows area detection, budget, available Supply Hub beds, lead distance, and captured map links.
 - Test each role at mobile-ish viewport and desktop.
 - Verify “Visits” is replaced with “Tours” in visible UI.
 - Walk through the four-role persona checklist and confirm each role has goals, inventory context, and next actions.
