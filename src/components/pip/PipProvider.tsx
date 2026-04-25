@@ -8,8 +8,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { LeadCapturePipPanel } from "./LeadCapturePipPanel";
+import { LeadManagePipPanel } from "./LeadManagePipPanel";
 
 type DocPipWindow = Window & { document: Document };
+export type PipMode = "dashboard" | "capture" | "manage";
 
 declare global {
   interface Window {
@@ -22,8 +25,10 @@ declare global {
 
 interface PipCtx {
   pipWindow: DocPipWindow | null;
-  open: () => Promise<void>;
+  mode: PipMode;
+  open: (mode?: PipMode) => Promise<void>;
   close: () => void;
+  setMode: (mode: PipMode) => void;
   supported: boolean;
   active: boolean;
 }
@@ -38,6 +43,7 @@ export function usePip() {
 
 export function PictureInPictureProvider({ children }: { children: ReactNode }) {
   const [pipWindow, setPipWindow] = useState<DocPipWindow | null>(null);
+  const [mode, setMode] = useState<PipMode>("dashboard");
   const supported = typeof window !== "undefined" && "documentPictureInPicture" in window;
   const moRef = useRef<MutationObserver | null>(null);
 
@@ -48,15 +54,16 @@ export function PictureInPictureProvider({ children }: { children: ReactNode }) 
     });
   }, []);
 
-  const open = useCallback(async () => {
+  const open = useCallback(async (nextMode: PipMode = "dashboard") => {
+    setMode(nextMode);
     if (!supported) {
       toast.error("Picture-in-Picture isn't supported here. Use Chrome, Edge, Brave or Opera on desktop.");
       return;
     }
     try {
       const w = await window.documentPictureInPicture!.requestWindow({
-        width: Math.min(560, window.innerWidth),
-        height: Math.min(760, window.innerHeight),
+        width: Math.min(nextMode === "dashboard" ? 720 : 460, window.innerWidth),
+        height: Math.min(nextMode === "capture" ? 680 : 760, window.innerHeight),
       });
 
       // Clone all stylesheets and inline styles so the dashboard inherits the
@@ -81,7 +88,7 @@ export function PictureInPictureProvider({ children }: { children: ReactNode }) 
       };
 
       // Initial title + viewport
-      w.document.title = "Gharpayy · Live PiP";
+      w.document.title = nextMode === "capture" ? "Gharpayy · Add Lead PiP" : nextMode === "manage" ? "Gharpayy · Manage Leads PiP" : "Gharpayy · Live PiP";
       const meta = w.document.createElement("meta");
       meta.name = "viewport";
       meta.content = "width=device-width, initial-scale=1";
@@ -96,6 +103,8 @@ export function PictureInPictureProvider({ children }: { children: ReactNode }) 
       w.document.body.style.fontFamily = hostBody.fontFamily;
       const themeClass = document.documentElement.className;
       if (themeClass) w.document.documentElement.className = themeClass;
+      w.document.documentElement.dataset.pipMode = nextMode;
+      w.document.body.dataset.pipMode = nextMode;
 
       // Restream new stylesheet additions (HMR / dynamic chunks)
       moRef.current?.disconnect();
@@ -123,7 +132,7 @@ export function PictureInPictureProvider({ children }: { children: ReactNode }) 
       w.addEventListener("pagehide", onClose);
 
       setPipWindow(w);
-      toast.success("Pop-out opened. Snap WhatsApp Web next to it.");
+      toast.success(nextMode === "capture" ? "Lead capture PiP opened." : nextMode === "manage" ? "Lead management PiP opened." : "Pop-out opened. Snap WhatsApp Web next to it.");
     } catch (err) {
       console.error("PIP request failed", err);
       toast.error("Couldn't open Picture-in-Picture. Click the page first, then retry.");
@@ -135,7 +144,7 @@ export function PictureInPictureProvider({ children }: { children: ReactNode }) 
   }, []);
 
   return (
-    <PipContext.Provider value={{ pipWindow, open, close, supported, active: !!pipWindow }}>
+    <PipContext.Provider value={{ pipWindow, mode, open, close, setMode, supported, active: !!pipWindow }}>
       {children}
     </PipContext.Provider>
   );
@@ -146,7 +155,7 @@ export function PictureInPictureProvider({ children }: { children: ReactNode }) 
  * When PiP is closed, children render in the original location.
  */
 export function PipMount({ children }: { children: ReactNode }) {
-  const { pipWindow } = usePip();
+  const { pipWindow, mode } = usePip();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -170,6 +179,8 @@ export function PipMount({ children }: { children: ReactNode }) {
   }, [pipWindow]);
 
   if (!pipWindow) return <>{children}</>;
+  if (mode === "capture") return createPortal(<LeadCapturePipPanel />, ensurePipMount(pipWindow, containerRef));
+  if (mode === "manage") return createPortal(<LeadManagePipPanel />, ensurePipMount(pipWindow, containerRef));
   if (!containerRef.current) {
     const mount = pipWindow.document.createElement("div");
     mount.id = "pip-root";
@@ -178,4 +189,15 @@ export function PipMount({ children }: { children: ReactNode }) {
     containerRef.current = mount;
   }
   return createPortal(children, containerRef.current);
+}
+
+function ensurePipMount(pipWindow: DocPipWindow, containerRef: React.MutableRefObject<HTMLDivElement | null>) {
+  if (!containerRef.current) {
+    const mount = pipWindow.document.createElement("div");
+    mount.id = "pip-root";
+    mount.style.minHeight = "100vh";
+    pipWindow.document.body.appendChild(mount);
+    containerRef.current = mount;
+  }
+  return containerRef.current;
 }
