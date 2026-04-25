@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { Save, Repeat2, Phone, MapPin, Sparkles, X, CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "@/shims/react-router-dom";
+import { useAppState } from "@/myt/lib/app-context";
+import { bestInventoryFits, detectAreaZone, recommendedFlowOps, recommendedTcm } from "@/myt/lib/inventory-intelligence";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -64,6 +66,7 @@ const BLR_OPTS = [
 export function QuickAddLeadPanel({ open, onClose }: Props) {
   const checkDup = useIdentityStore((s) => s.checkDuplicates);
   const create = useIdentityStore((s) => s.createLead);
+  const { rooms, blocks, tours } = useAppState();
   const navigate = useNavigate();
 
   // Core
@@ -93,6 +96,14 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     () => detectZone(`${areasText} ${fullAddress}`),
     [areasText, fullAddress],
   );
+  const areaFit = useMemo(() => {
+    const areaText = `${areasText} ${fullAddress}`.trim();
+    if (!areaText) return null;
+    const budgetNum = Number((budget.match(/\d+/g) ?? []).join('').slice(0, 6)) || 0;
+    const zone = detectAreaZone(areaText);
+    const fits = bestInventoryFits({ areaText, budget: budgetNum, room, rooms, blocks, limit: 3 });
+    return { zone, fits, flowOps: recommendedFlowOps(zone.id), tcm: recommendedTcm(tours, zone.id) };
+  }, [areasText, fullAddress, budget, room, rooms, blocks, tours]);
 
   const reset = () => {
     setName(""); setPhone(""); setEmail("");
@@ -106,8 +117,19 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
 
   const scheduleExisting = (lead: ReturnType<typeof checkDup>["candidates"][number]["lead"]) => {
     onClose();
-    navigate("/myt/schedule", { state: { lead } });
+    navigate("/myt/schedule", { state: { lead, inventoryFit: areaFit?.fits[0] } });
     toast.info(`Scheduling tour for ${lead.name}`);
+  };
+
+  const scheduleDraft = () => {
+    if (!name.trim() || !phone.trim()) { toast.error("Need name and phone before scheduling"); return; }
+    onClose();
+    navigate("/myt/schedule", {
+      state: {
+        lead: { name, phone, email, location: areasText, area: areasText, fullAddress, budget, moveInDate: moveIn, room, type, extraContent: notes || specialReqs },
+        inventoryFit: areaFit?.fits[0],
+      },
+    });
   };
 
   const save = (keepOpen: boolean) => {
