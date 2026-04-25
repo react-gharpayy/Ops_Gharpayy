@@ -10,14 +10,15 @@ import { LeadControlPanel } from '@/myt/components/LeadControlPanel';
 import { GlueFeed } from '@/components/GlueFeed';
 import { CoachInline } from '@/components/CoachInline';
 import { buildAreaOperatingRows, bestInventoryFits, detectAreaZone, recommendedTcm } from '@/myt/lib/inventory-intelligence';
-import { zones } from '@/myt/lib/mock-data';
+import { zones, teamMembers } from '@/myt/lib/mock-data';
 
 const CYCLE_TARGETS = { chatsClosed: 30, mytLeads: 10, toursScheduled: 4, sameDayConfirmed: 2 };
 
 export default function FlowOpsDashboard() {
   const { tours, leads, rooms, blocks, bookings, currentMemberId } = useAppState();
   const navigate = useNavigate();
-  const myZone = currentMemberId ? zones.find((z) => z.id === detectAreaZone(zones.find((zone) => zone.id === currentMemberId)?.area ?? '').id) : zones[0];
+  const myMember = currentMemberId ? teamMembers.find((m) => m.id === currentMemberId) : null;
+  const myZone = zones.find((z) => z.id === myMember?.zoneId) ?? zones[0];
   const operatingRows = buildAreaOperatingRows({ leads, tours, rooms, blocks, bookings });
   const ownedRow = operatingRows.find((r) => r.zoneId === myZone?.id) ?? operatingRows[0];
   const areaLeads = leads.filter((l) => detectAreaZone(l.area).id === ownedRow.zoneId).slice(0, 5);
