@@ -7,6 +7,7 @@ import { Tour, BookingSource, TourType, WillBookToday, DecisionMaker, TourQualif
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { scoreTour, inferConfirmationStrength, intentBg } from '@/myt/lib/confidence';
@@ -516,6 +517,15 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DebugMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border bg-background/70 px-2 py-1.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 truncate font-medium text-foreground">{value}</div>
     </div>
   );
 }
