@@ -9,9 +9,9 @@ import { roomHeroClass } from '@/owner/components/room-hero';
 import { cn } from '@/lib/utils';
 
 const EVENT_LABEL: Record<string, { label: string; icon: any; tone: string }> = {
-  'team.visit.scheduled': { label: 'Visit scheduled', icon: Calendar, tone: 'text-info' },
-  'team.visit.started':   { label: 'Visit started',   icon: Activity, tone: 'text-warning-foreground' },
-  'team.visit.ended':     { label: 'Visit ended',     icon: CheckCircle2, tone: 'text-success' },
+  'team.visit.scheduled': { label: 'Tour scheduled', icon: Calendar, tone: 'text-info' },
+  'team.visit.started':   { label: 'Tour started',   icon: Activity, tone: 'text-warning-foreground' },
+  'team.visit.ended':     { label: 'Tour ended',     icon: CheckCircle2, tone: 'text-success' },
   'tour.confirmation.sent': { label: 'Confirmation sent', icon: MessagesSquare, tone: 'text-muted-foreground' },
   'team.lead.pitched':    { label: 'Lead pitched',    icon: Phone, tone: 'text-info' },
 };
@@ -48,7 +48,7 @@ export function OwnerVisits() {
   return (
     <div className="space-y-5 pb-12">
       <header>
-        <h1 className="font-display text-xl md:text-2xl font-semibold tracking-tight">Visits at your property</h1>
+        <h1 className="font-display text-xl md:text-2xl font-semibold tracking-tight">Tours at your property</h1>
         <p className="text-sm text-muted-foreground">Live feed from Flow Ops + TCM team — no separate app needed.</p>
       </header>
 
