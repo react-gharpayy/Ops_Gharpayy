@@ -19,6 +19,8 @@ import { buildDoNextQueue } from "@/lib/engine";
 import { useGame, whoKey } from "@/lib/gamification";
 import { useCRM10x } from "@/lib/crm10x/store";
 import { useEffect, useMemo } from "react";
+import { PictureInPictureProvider, PipMount } from "./pip/PipProvider";
+import { PipButton } from "./pip/PipButton";
 
 type NavItem = { to: string; label: string; icon: typeof Target; badge?: number; accent?: boolean };
 
