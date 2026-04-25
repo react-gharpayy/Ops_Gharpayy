@@ -248,6 +248,9 @@ export default function MYTLeadTracker() {
           ))}
         </div>
       </div>
+
+      <ParserTestModal open={showParserTest} onClose={() => setShowParserTest(false)} />
+      <QuickAddLeadPanel open={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
     </div>
   );
 }
