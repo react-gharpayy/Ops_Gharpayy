@@ -81,7 +81,10 @@ export function detectZone(rawText: string): string {
   return "";
 }
 
-const EMOJI_RE = /[📝📱✉️📍💰📆📅👨🏢👫✨💥💯⚡🔥💛😘🏠🎯👥📞👤💼🛏️]/g;
+const EMOJI_RE = /[📝📱✉️📍💰📆📅👨🏢👫✨💥💯⚡🔥💛😘🏠🎯👥📞👤💼🛏️🥵✅❌⭐]/g;
+
+const NULL_WORD_RE = /\b(?:name|form|full|thank\s*you|thanks|gharpayy|gharpayy\.com|your\s+superstay\s+awaits|best\s+pg\s+in\s+10\s+minutes|18\s*sec|aayushi\s+from\s+gharpayy|not\s+filled)\b/gi;
+const LINK_RE = /(?:https?:\/\/|www\.)\S+|\b(?:maps\.app\.goo\.gl|goo\.gl|bit\.ly)\/\S+/gi;
 
 const LOCATION_HINTS = [
   ...ZONES.flatMap((z) => z.keywords),
@@ -173,6 +176,19 @@ function normalizeRoom(text: string): string {
   if (hasPrivate) return "Private";
   if (hasShared) return "Shared";
   return "";
+}
+
+function extractLinks(text: string): string[] {
+  return [...new Set((text.match(LINK_RE) ?? []).map((u) => u.replace(/[),.;]+$/g, "")))];
+}
+
+function extractBudgets(text: string): string[] {
+  const matches = text.match(/(?:under\s*)?₹?\s*\d{1,2}(?:\.\d+)?\s*(?:k|K|000)?\s*(?:[-–to\/]+\s*₹?\s*\d{1,2}(?:\.\d+)?\s*(?:k|K|000)?)?|\b\d{4,6}\s*(?:to|-|–)\s*\d{4,6}\b/g) ?? [];
+  return [...new Set(matches.map((m) => m.replace(/[₹,()]/g, "").replace(/\s+/g, " ").trim()).filter((m) => /\d/.test(m)))].slice(0, 6);
+}
+
+function cleanJunk(text: string): string {
+  return text.replace(NULL_WORD_RE, " ").replace(/[*_`⚡🔥💛🥵]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 /** Title-case a name string, preserving common patronymic letters. */
