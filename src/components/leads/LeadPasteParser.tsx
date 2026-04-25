@@ -178,13 +178,27 @@ function FieldRow({
 }) {
   const fieldIssues = issues.filter((i) => i.field === field);
   const error = fieldIssues.find((i) => i.severity === "error");
+  const warn = fieldIssues.find((i) => i.severity === "warning");
+  const conf: "high" | "med" | "low" | "missing" =
+    error ? "missing" : warn ? "low" : parsed ? "high" : value ? "med" : "missing";
+  const confColor = {
+    high: "bg-green-500/15 text-green-700 border-green-500/30",
+    med: "bg-amber-500/15 text-amber-700 border-amber-500/30",
+    low: "bg-amber-500/15 text-amber-700 border-amber-500/30",
+    missing: "bg-destructive/15 text-destructive border-destructive/30",
+  }[conf];
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label className="text-xs">{label}</Label>
-        {parsed && <span className="text-[10px] text-muted-foreground">parsed: {parsed}</span>}
+        <div className="flex items-center gap-1.5">
+          {parsed && <span className="text-[10px] text-muted-foreground truncate max-w-[160px]" title={parsed}>parsed: {parsed}</span>}
+          <span className={`inline-flex items-center rounded border px-1.5 py-0 text-[9px] font-medium ${confColor}`}>
+            {conf === "high" ? "HIGH" : conf === "med" ? "EDITED" : conf === "low" ? "LOW" : "MISSING"}
+          </span>
+        </div>
       </div>
-      <Input value={value} type={type} onChange={(e) => onChange(e.target.value)} className={error ? "border-destructive" : ""} />
+      <Input value={value} type={type} onChange={(e) => onChange(e.target.value)} className={error ? "border-destructive" : warn ? "border-amber-500/50" : ""} />
       {fieldIssues.map((i, k) => (
         <p key={k} className={`text-[11px] ${i.severity === "error" ? "text-destructive" : "text-muted-foreground"}`}>
           {i.message}{i.suggestion ? ` — ${i.suggestion}` : ""}
