@@ -5,7 +5,7 @@ import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import {
-  LayoutDashboard, Target, CalendarPlus, ClipboardList, Boxes, Activity, Sun, Phone, MessageSquare, Trophy, Sparkles, IndianRupee, MapPin, Zap,
+  LayoutDashboard, Target, CalendarPlus, ClipboardList, Boxes, Activity, Sun, Phone, MessageSquare, Trophy, Sparkles, IndianRupee, MapPin, Zap, Plus, ListTodo,
 } from "lucide-react";
 
 /** ⌘K — instant jump to any lead, route, or quick action. */
@@ -33,6 +33,17 @@ export function CommandPalette() {
       <CommandInput placeholder="Jump to lead, page, or action…" />
       <CommandList>
         <CommandEmpty>No results.</CommandEmpty>
+        <CommandGroup heading="Create new">
+          <CommandItem value="new lead paste" onSelect={() => { setOpen(false); window.dispatchEvent(new KeyboardEvent("keydown", { key: "n", metaKey: true })); }}>
+            <Plus className="mr-2 h-4 w-4 text-primary" /> Lead from paste <span className="ml-auto text-[10px] text-muted-foreground">⌘N</span>
+          </CommandItem>
+          <CommandItem value="new todo task" onSelect={() => { setOpen(false); navigate({ to: "/my-tasks" }); }}>
+            <ListTodo className="mr-2 h-4 w-4" /> Personal todo
+          </CommandItem>
+          <CommandItem value="schedule tour" onSelect={() => go("/myt/schedule")}>
+            <CalendarPlus className="mr-2 h-4 w-4" /> Schedule tour
+          </CommandItem>
+        </CommandGroup>
         <CommandGroup heading="Navigate">
           <CommandItem onSelect={() => go("/")}><LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard</CommandItem>
           <CommandItem onSelect={() => go("/today")}><Sun className="mr-2 h-4 w-4" /> Today (Do next)</CommandItem>
