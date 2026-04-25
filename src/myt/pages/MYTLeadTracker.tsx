@@ -77,24 +77,60 @@ export default function MYTLeadTracker() {
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      {/* Toolbar */}
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl md:text-2xl font-heading font-bold text-foreground">MYT Lead Tracker</h1>
           <p className="text-xs text-muted-foreground">
             Paste any format · auto-dedup against {identityLeadCount} unified leads
           </p>
         </div>
-        <div className="flex gap-1 rounded-lg border border-border p-0.5 bg-surface-2/50">
-          <button onClick={() => setMode('paste')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'paste' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-            <Sparkles className="h-3 w-3 inline mr-1" />Paste
-          </button>
-          <button onClick={() => setMode('manual')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'manual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-            Manual
-          </button>
-          <button onClick={() => setMode('requests')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'requests' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-            Requests
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={pipActive ? "secondary" : "default"}
+            onClick={() => (pipActive ? closePip() : openPip())}
+            disabled={!pipSupported && !pipActive}
+            className="h-8 text-xs gap-1.5"
+            title={pipSupported ? "Pop dashboard out as a floating window over WhatsApp" : "Document Picture-in-Picture not supported in this browser"}
+          >
+            <PictureInPicture2 className="h-3.5 w-3.5" />
+            {pipActive ? "Exit PiP" : "Open PiP"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setShowQuickAdd(true)} className="h-8 text-xs gap-1.5">
+            <Zap className="h-3.5 w-3.5" /> Quick Add
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setShowParserTest(true)} className="h-8 text-xs gap-1.5">
+            <FlaskConical className="h-3.5 w-3.5" /> Run Parser Test
+          </Button>
         </div>
+      </div>
+
+      {/* PiP fallback */}
+      {!pipSupported && (
+        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs flex items-start gap-2">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div>
+            <div className="font-medium text-foreground">Picture-in-Picture isn't available in this browser.</div>
+            <div className="text-muted-foreground">
+              For the floating dashboard, open this site in <strong>Chrome, Edge, Brave or Opera</strong> on
+              desktop. Alternative: use split-screen (Windows: <kbd className="px-1 rounded border border-border">Win</kbd>+<kbd className="px-1 rounded border border-border">←</kbd> · macOS: drag tab into a Stage Manager group).
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mode tabs */}
+      <div className="flex gap-1 rounded-lg border border-border p-0.5 bg-surface-2/50 w-fit">
+        <button onClick={() => setMode('paste')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'paste' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+          <Sparkles className="h-3 w-3 inline mr-1" />Paste
+        </button>
+        <button onClick={() => setMode('manual')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'manual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+          Manual
+        </button>
+        <button onClick={() => setMode('requests')} className={`px-2.5 py-1 text-[11px] rounded-md ${mode === 'requests' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+          Requests
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
