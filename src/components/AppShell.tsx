@@ -327,6 +327,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <LeadControlPanel />
       <CommandPalette />
       <CoachWidget />
-    </div>
+      </div>
+    </PictureInPictureProvider>
   );
 }
