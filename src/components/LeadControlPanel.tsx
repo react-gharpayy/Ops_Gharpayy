@@ -725,6 +725,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
 function Meta({ icon: Icon, label, value }: { icon: typeof CalendarIcon; label: string; value: string }) {
   return (
     <div className="rounded-md bg-muted/60 px-2 py-1.5">
