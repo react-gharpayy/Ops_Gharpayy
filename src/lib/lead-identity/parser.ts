@@ -1,0 +1,337 @@
+// Paste-to-Lead parser. Handles WhatsApp forms, plain text, spreadsheet rows,
+// emoji-heavy formats, AND unlabeled "casual" formats (name on line 1, bare
+// phone/email/location/budget/move-in stacked vertically).
+import type { ParsedLeadDraft } from "./types";
+
+interface ZoneDef {
+  zone: string;
+  priority: number;
+  keywords: string[];
+}
+
+const ZONES: ZoneDef[] = [
+  {
+    zone: "South", priority: 1,
+    keywords: [
+      "koramangala","kormangala","kormagalam","kormanagala","korma","btm layout","btm","jayanagar","jaynagar","jp nagar","jpnagar",
+      "hsr layout","hsr","banashankari","basavanagudi","lalbagh","south end","southend",
+      "electronic city","neeladri","begur","bommanahalli","hulimavu",
+      "sg palya","silk board","silkboard","agara","madiwala","tavarekere",
+      "christ university","bannerghatta","kanakapura","kalena agrahara",
+      "hosur road","forum mall","vv puram","jayadev hospital",
+      "jayanagar 9th","btm 2nd stage","btm stage 2","koramangala 3rd",
+      "koramangala 4th","koramangala 5th","koramangala 6th",
+      "umiya emporium","nexus mall",
+    ],
+  },
+  {
+    zone: "East", priority: 2,
+    keywords: [
+      "whitefield","white field","hopefarm","itpl","kundanahalli","kundalahalli","kadugodi",
+      "brookfield","hoodi","garudacharpalya","varthur","nallurhalli","kr puram","seetharampalya",
+      "bellandur","sarjapur","ecospace","embassy tech village","prestige tech park","yemalur",
+      "indiranagar","indranagar","indira nagar","domlur","ejipura","murgeshpalya",
+      "cv raman nagar","new thippasandra","old airport road","airport road","hal",
+      "marathahalli","marathalli","mahadevapura","mahadevpura","bagmane",
+      "kadubeesanahalli","kadubeesana","spice garden","phoenix market city","brigade metropolis",
+      "rmz infinity","prestige shantiniketan","whitefield metro","aecs layout","aecs",
+    ],
+  },
+  {
+    zone: "North", priority: 3,
+    keywords: [
+      "yelahanka","hebbal","manyata tech","manyata","manyatha","nagawara","thanisandra",
+      "jakkur","banaswadi","kalyan nagar","rt nagar","sahakara nagar","devanahalli",
+      "vidyaranyapura","jalahalli","bhartiya","embassy boulevard",
+      "nagasandra","hennur","peenya","yeshwanthpur","ypr",
+    ],
+  },
+  {
+    zone: "West", priority: 4,
+    keywords: [
+      "rajajinagar","vijaynagar","vijaya nagar","yeswanthpur",
+      "nagarbhavi","chord road","mahalakshmi layout","malleshwaram","tumkur road",
+      "sanjayanagara","chandra layout",
+    ],
+  },
+  {
+    zone: "Central", priority: 5,
+    keywords: [
+      "mg road","brigade road","richmond road","richmond circle","shanthinagar",
+      "ashok nagar","vittal mallya","jayamahal","majestic",
+      "gandhi nagar","frazer town","cubbon park","ub city","vasanth nagar",
+      "trinity circle","halasuru","church street","lavelle road",
+      "residency road","museum road","adugodi","wilson garden","cunningham",
+    ],
+  },
+];
+
+export function detectZone(rawText: string): string {
+  if (!rawText) return "";
+  const t = rawText.toLowerCase();
+  for (const z of [...ZONES].sort((a, b) => a.priority - b.priority)) {
+    if (z.keywords.some((kw) => t.includes(kw))) return z.zone;
+  }
+  return "";
+}
+
+const EMOJI_RE = /[📝📱✉️📍💰📆👨🏢👫✨💥💯⚡🔥💛😘🏠🎯👥]/g;
+
+const LOCATION_HINTS = [
+  ...ZONES.flatMap((z) => z.keywords),
+  "near","opposite","mall","road","layout","circle","stage","cross","main",
+  "metro","station","colony","nagar","palya","puram","halli","village",
+];
+
+const NON_NAME_TOKENS = /\b(name|phone|mobile|email|location|area|budget|move|moving|room|need|special|request|profession|working|student|intern|girls?|boys?|coed|private|shared|sharing|single|double|triple|ac|veg|gym|preferred|in\s*blr|out\s*of)\b/i;
+
+function looksLikeName(line: string): boolean {
+  const t = line.trim();
+  if (!t || t.length < 2 || t.length > 50) return false;
+  if (/\d/.test(t)) return false;
+  if (/@/.test(t)) return false;
+  if (NON_NAME_TOKENS.test(t)) return false;
+  if (LOCATION_HINTS.some((k) => t.toLowerCase().includes(k))) return false;
+  // Must look like a name: alphabetic words
+  const words = t.replace(/[^a-zA-Z\s.]/g, "").trim().split(/\s+/).filter(Boolean);
+  if (words.length < 1 || words.length > 5) return false;
+  // First word should start with a capital OR be all-caps; lowercase-only strings are usually descriptions
+  return /^[A-Z]/.test(words[0]) || /^[a-z]/.test(words[0]);
+}
+
+function looksLikeLocation(line: string): boolean {
+  const t = line.trim().toLowerCase();
+  if (!t || t.length > 120) return false;
+  if (/\d{5,}/.test(t)) return false;
+  if (/@/.test(t)) return false;
+  return LOCATION_HINTS.some((k) => t.includes(k));
+}
+
+function looksLikeBudget(line: string): boolean {
+  const t = line.trim().toLowerCase().replace(/[₹,\s]/g, "");
+  // Pure numeric (4-6 digits) OR contains k OR has range with -
+  return /^\d{3,6}$/.test(t) ||
+    /^\d+(?:\.\d+)?k$/i.test(t) ||
+    /^\d+[-–to]+\d+k?$/i.test(t) ||
+    /^\d+k?[-–to/]+\d+k?$/i.test(t);
+}
+
+function looksLikeDate(line: string): boolean {
+  const t = line.trim().toLowerCase();
+  if (t.length > 40) return false;
+  return /^(immediate|asap|now)/i.test(t) ||
+    /\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/.test(t) ||
+    /\d{1,2}(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(t) ||
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}/i.test(t) ||
+    /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i.test(t);
+}
+
+function normalizeRoom(text: string): string {
+  const t = text.toLowerCase();
+  const hasPrivate = /\b(private|single|1\s*sharing|1bhk)\b/.test(t);
+  const hasShared = /\b(shared|sharing|double|2\s*sharing|triple|3\s*sharing|twin)\b/.test(t);
+  if (hasPrivate && hasShared) return "Both";
+  if (hasPrivate) return "Private";
+  if (hasShared) return "Shared";
+  return "";
+}
+
+export function parseLead(raw: string): ParsedLeadDraft | null {
+  if (!raw || raw.trim().length < 4) return null;
+  const clean = raw
+    .replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1")
+    .replace(/_{1,3}([^_\n]+)_{1,3}/g, "$1")
+    .replace(/`([^`]+)`/g, "$1");
+
+  const grab = (...patterns: RegExp[]): string => {
+    for (const re of patterns) {
+      const m = clean.match(re);
+      if (m?.[1]) return m[1].replace(EMOJI_RE, "").trim();
+    }
+    return "";
+  };
+
+  // ---------- Phone ----------
+  const phoneMatch = clean.match(/(?:\+?91[-\s]?)?([6-9]\d{4}[-\s]?\d{5})/);
+  const phone = phoneMatch ? phoneMatch[0].replace(/[-\s]/g, "") : "";
+
+  // ---------- Email ----------
+  const emailMatch = clean.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+  const email = emailMatch?.[0] ?? "";
+
+  // ---------- Name (labeled first, then heuristic) ----------
+  let name = grab(
+    /(?:^|\n)\s*Name\s*[:\-–*]+\s*([^\n,📱\d]{2,40})/im,
+    /(?:^|\n)\s*\.Name\s+([^\n.]{2,35})/im,
+  ).replace(/^\W+|\W+$/g, "").trim();
+
+  if (!name) {
+    // Try first-line heuristic
+    const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+    for (const line of lines.slice(0, 3)) {
+      const stripped = line.replace(EMOJI_RE, "").replace(/^[-–*•]\s*/, "").trim();
+      // If line has phone embedded: "Rahul Sharma 9876543210"
+      const inlineMatch = stripped.match(/^([A-Za-z][A-Za-z\s.]{1,40}?)\s+(?:\+?91)?[6-9]\d{9}/);
+      if (inlineMatch) { name = inlineMatch[1].trim(); break; }
+      if (looksLikeName(stripped)) { name = stripped; break; }
+    }
+  }
+  // Title-case
+  if (name) {
+    name = name.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  }
+
+  // ---------- Location ----------
+  let location = grab(
+    /Preferred Location[^:\n]*[:\-–]+\s*([^\n💰📆👨🏢]{3,80})/i,
+    /Which location\s*[:\-–]+\s*([^\n]{3,60})/i,
+    /Location\s*[:\-–]+\s*([^\n💰📆👨🏢]{3,80})/i,
+    /Area\s*[:\-–]+\s*([^\n]{3,60})/i,
+  ).replace(/\(Map link\)|https?:\/\/\S+/gi, "").replace(EMOJI_RE, "").trim();
+
+  if (!location) {
+    // Heuristic: scan for location-like lines
+    for (const line of clean.split("\n").map((l) => l.trim())) {
+      if (looksLikeLocation(line) && !looksLikeBudget(line)) { location = line.replace(EMOJI_RE, "").trim(); break; }
+    }
+  }
+
+  // ---------- Budget ----------
+  let budget = grab(
+    /(?:Actual budget|Budget Range|Budget range|Budget is|Budget|Budjet)\s*[:\-–(]*\s*([^\n)📆👨🏢]{2,35})/i,
+  ).replace(/[₹()\[\]]/g, "").replace(/\s+/g, " ").trim();
+
+  if (!budget) {
+    // Heuristic: scan stand-alone budget-like lines
+    for (const line of clean.split("\n").map((l) => l.trim())) {
+      if (looksLikeBudget(line)) { budget = line.replace(/[₹]/g, "").trim(); break; }
+    }
+  }
+
+  // ---------- Move-in ----------
+  let moveIn = grab(
+    /Move[- ]?in[- ]?Date\s*[:\-–😘*]+\s*([^\n👨🏢👫✨]{2,35})/i,
+    /Moving Date\s*[:\-–]+\s*([^\n]{2,30})/i,
+    /Move[- ]?in\s*[:\-–]+\s*([^\n]{2,30})/i,
+    /Movein\s*[:\-–]+\s*([^\n]{2,30})/i,
+  ).trim();
+
+  if (!moveIn) {
+    for (const line of clean.split("\n").map((l) => l.trim())) {
+      if (looksLikeDate(line) && !looksLikeBudget(line)) { moveIn = line; break; }
+    }
+  }
+
+  // ---------- Type ----------
+  const isWorking = /\bworking\b|\bprofessional\b|\banalyst\b|\banalysist\b|\bmarketer\b|\bengineer\b|\bdeveloper\b/i.test(clean);
+  const isStudent = /\bstudent\b/i.test(clean);
+  const isIntern = /\bintern(?:ing)?\b/i.test(clean);
+  const type = isWorking && isStudent ? "Student/Working"
+    : isWorking ? "Working"
+    : isStudent ? "Student"
+    : isIntern ? "Intern" : "";
+
+  // ---------- Room ----------
+  const roomLabeled = grab(/Room\s*[*:\-–(]+\s*([^\n👫✨📞]{2,40})/i);
+  const room = normalizeRoom(roomLabeled || clean);
+
+  // ---------- Need ----------
+  const needRaw = grab(
+    /NEED\s*[*:\-–(]+\s*([^\n✨📞]{2,35})/i,
+    /Need\s*[:\-–]+\s*([^\n]{2,35})/i,
+  ).toLowerCase();
+  const wantGirls = needRaw.includes("girl") || /\bgirls?\b/i.test(clean);
+  const wantBoys = needRaw.includes("boy") || /\bboys?\b/i.test(clean);
+  const wantCoed = needRaw.includes("coed") || /\bcoed\b/i.test(clean);
+  const need = [wantGirls && "Girls", wantBoys && "Boys", wantCoed && "Coed"].filter(Boolean).join(" / ");
+
+  // ---------- Special requests (labeled + heuristic fallback) ----------
+  let specialReqs = grab(
+    /Special Requests?\s*[*:\-–(]+\s*([^\n*📞]{2,200})/i,
+  ).replace(/\b(NA|None|n\/a|If any)\b/gi, "").trim();
+
+  if (!specialReqs) {
+    // Heuristic: collect free-text lines that aren't already classified
+    const consumed = new Set<string>();
+    [name, phone, email, location, budget, moveIn].forEach((v) => v && consumed.add(v.toLowerCase().trim()));
+    const extras: string[] = [];
+    for (const rawLine of clean.split("\n")) {
+      const line = rawLine.replace(EMOJI_RE, "").trim();
+      if (!line || line.length < 4 || line.length > 200) continue;
+      const lower = line.toLowerCase();
+      if (consumed.has(lower)) continue;
+      if (/\d{6,}/.test(line)) continue;
+      if (/@/.test(line)) continue;
+      if (looksLikeBudget(line) || looksLikeDate(line)) continue;
+      if (NON_NAME_TOKENS.test(line) && !/\b(veg|non[- ]?veg|ac|gym|wifi|food|parking|pet|ventilation|spacious|clean|backup|family)\b/i.test(line)) continue;
+      // Keep amenity-like or descriptive lines
+      if (/\b(veg|non[- ]?veg|ac|gym|wifi|food|parking|pet|ventilation|spacious|clean|backup|family|quiet|sunlight|balcony|attached|washroom)\b/i.test(line)
+          || (/^[A-Za-z]/.test(line) && line.split(/\s+/).length >= 3)) {
+        extras.push(line);
+      }
+    }
+    specialReqs = extras.join("; ").slice(0, 240);
+  }
+
+  const inBLRTrue = /\bin\s*blr\b|in bangalore|currently in bangalore|already here|yes.*blr/i.test(raw);
+  const inBLRFalse = /not in blr|not in bangalore|outside bangalore|relocating|out.*blr/i.test(raw);
+  const inBLR = inBLRTrue ? true : inBLRFalse ? false : null;
+
+  const zone = detectZone(raw);
+
+  if (!phone && !email && !name) return null;
+
+  return {
+    name, phone, email, location, budget, moveIn,
+    type, room, need, specialReqs, inBLR, zone,
+    rawSource: raw,
+  };
+}
+
+export function splitLeads(text: string): string[] {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const chunks: string[] = [];
+  let cur: string[] = [];
+
+  const isOpener = (line: string): boolean => {
+    const t = line.trim();
+    if (t.length < 3) return false;
+    return (
+      /^📝/.test(t) ||
+      /^\*?GHARPAYY/i.test(t) ||
+      /^(?:\*?\s*Name\s*[:\-–*])/i.test(t) ||
+      /^Name\s*[-–]/i.test(t) ||
+      /^\.Name\s/i.test(t) ||
+      /^\[[\d:]+\s*(AM|PM),\s*\d/.test(t) ||
+      /^[A-Z][a-zA-Z]{1,20}\s+[6-9]\d{9}/.test(t) ||
+      /^[A-Z][a-zA-Z\s]{2,30}\s+[6-9]\d{9}/.test(t) ||
+      /^(?:\+91[-\s]?)?[6-9]\d{9}\b/.test(t) ||
+      /^[-–]\s*[A-Z][a-z]/.test(t) ||
+      /^\*?Name\s*:/i.test(t)
+    );
+  };
+
+  const isJunk = (line: string): boolean => {
+    const t = line.trim();
+    return !t ||
+      /^(not filled|no|n\/a|xyz|3405|na)$/i.test(t) ||
+      /^[\-–=*_]{3,}$/.test(t);
+  };
+
+  for (const line of lines) {
+    if (isJunk(line)) {
+      if (cur.length) { chunks.push(cur.join("\n")); cur = []; }
+      continue;
+    }
+    if (cur.length === 0) {
+      cur.push(line);
+    } else if (isOpener(line)) {
+      chunks.push(cur.join("\n"));
+      cur = [line];
+    } else {
+      cur.push(line);
+    }
+  }
+  if (cur.length) chunks.push(cur.join("\n"));
+  return chunks.filter((c) => c.trim().length > 4);
+}

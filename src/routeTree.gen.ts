@@ -9,38 +9,952 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ZoneBrainRouteImport } from './routes/zone-brain'
+import { Route as ToursRouteImport } from './routes/tours'
+import { Route as TodayRouteImport } from './routes/today'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SequencesRouteImport } from './routes/sequences'
+import { Route as RevivalRouteImport } from './routes/revival'
+import { Route as RevenueRouteImport } from './routes/revenue'
+import { Route as QueueRouteImport } from './routes/queue'
+import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as LeadsRouteImport } from './routes/leads'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as InventoryRouteImport } from './routes/inventory'
+import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as HeatmapRouteImport } from './routes/heatmap'
+import { Route as HealthRouteImport } from './routes/health'
+import { Route as HandoffsRouteImport } from './routes/handoffs'
+import { Route as FollowUpsRouteImport } from './routes/follow-ups'
+import { Route as CoachRouteImport } from './routes/coach'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SupplyHubIndexRouteImport } from './routes/supply-hub/index'
+import { Route as OwnerIndexRouteImport } from './routes/owner/index'
+import { Route as MytIndexRouteImport } from './routes/myt/index'
+import { Route as SupplyHubMatchRouteImport } from './routes/supply-hub/match'
+import { Route as SupplyHubAreasRouteImport } from './routes/supply-hub/areas'
+import { Route as SupplyHubIdRouteImport } from './routes/supply-hub/$id'
+import { Route as OwnerVisitsRouteImport } from './routes/owner/visits'
+import { Route as OwnerRoomsRouteImport } from './routes/owner/rooms'
+import { Route as OwnerInventoryRouteImport } from './routes/owner/inventory'
+import { Route as OwnerInsightsRouteImport } from './routes/owner/insights'
+import { Route as OwnerBlocksRouteImport } from './routes/owner/blocks'
+import { Route as MytZonesRouteImport } from './routes/myt/zones'
+import { Route as MytWarRoomRouteImport } from './routes/myt/war-room'
+import { Route as MytToursRouteImport } from './routes/myt/tours'
+import { Route as MytTeamRouteImport } from './routes/myt/team'
+import { Route as MytTcmRouteImport } from './routes/myt/tcm'
+import { Route as MytSettingsRouteImport } from './routes/myt/settings'
+import { Route as MytScoreRouteImport } from './routes/myt/score'
+import { Route as MytScheduleRouteImport } from './routes/myt/schedule'
+import { Route as MytPropertiesRouteImport } from './routes/myt/properties'
+import { Route as MytOwnersCompareRouteImport } from './routes/myt/owners-compare'
+import { Route as MytMismatchRouteImport } from './routes/myt/mismatch'
+import { Route as MytMarketplaceRouteImport } from './routes/myt/marketplace'
+import { Route as MytLeadsRouteImport } from './routes/myt/leads'
+import { Route as MytLeaderboardRouteImport } from './routes/myt/leaderboard'
+import { Route as MytInventoryFeedbackRouteImport } from './routes/myt/inventory-feedback'
+import { Route as MytFunnelRouteImport } from './routes/myt/funnel'
+import { Route as MytFlowOpsRouteImport } from './routes/myt/flow-ops'
+import { Route as MytDraftsRouteImport } from './routes/myt/drafts'
+import { Route as MytCalendarRouteImport } from './routes/myt/calendar'
+import { Route as MytBookingsRouteImport } from './routes/myt/bookings'
+import { Route as LeadsAddRouteImport } from './routes/leads.add'
+import { Route as OwnerMediaRoomIdRouteImport } from './routes/owner/media.$roomId'
+import { Route as MytTourIdRouteImport } from './routes/myt/tour.$id'
+import { Route as MytTcmPerformanceRouteImport } from './routes/myt/tcm.performance'
+import { Route as MytTcmActionsRouteImport } from './routes/myt/tcm.actions'
+import { Route as MytFeedbackIdRouteImport } from './routes/myt/feedback.$id'
+import { Route as MytTourIdReportRouteImport } from './routes/myt/tour.$id.report'
 
+const ZoneBrainRoute = ZoneBrainRouteImport.update({
+  id: '/zone-brain',
+  path: '/zone-brain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToursRoute = ToursRouteImport.update({
+  id: '/tours',
+  path: '/tours',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TodayRoute = TodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SequencesRoute = SequencesRouteImport.update({
+  id: '/sequences',
+  path: '/sequences',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevivalRoute = RevivalRouteImport.update({
+  id: '/revival',
+  path: '/revival',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevenueRoute = RevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QueueRoute = QueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagerRoute = ManagerRouteImport.update({
+  id: '/manager',
+  path: '/manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadsRoute = LeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventoryRoute = InventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HeatmapRoute = HeatmapRouteImport.update({
+  id: '/heatmap',
+  path: '/heatmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthRoute = HealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HandoffsRoute = HandoffsRouteImport.update({
+  id: '/handoffs',
+  path: '/handoffs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FollowUpsRoute = FollowUpsRouteImport.update({
+  id: '/follow-ups',
+  path: '/follow-ups',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoachRoute = CoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupplyHubIndexRoute = SupplyHubIndexRouteImport.update({
+  id: '/supply-hub/',
+  path: '/supply-hub/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerIndexRoute = OwnerIndexRouteImport.update({
+  id: '/owner/',
+  path: '/owner/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytIndexRoute = MytIndexRouteImport.update({
+  id: '/myt/',
+  path: '/myt/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupplyHubMatchRoute = SupplyHubMatchRouteImport.update({
+  id: '/supply-hub/match',
+  path: '/supply-hub/match',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupplyHubAreasRoute = SupplyHubAreasRouteImport.update({
+  id: '/supply-hub/areas',
+  path: '/supply-hub/areas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupplyHubIdRoute = SupplyHubIdRouteImport.update({
+  id: '/supply-hub/$id',
+  path: '/supply-hub/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerVisitsRoute = OwnerVisitsRouteImport.update({
+  id: '/owner/visits',
+  path: '/owner/visits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRoomsRoute = OwnerRoomsRouteImport.update({
+  id: '/owner/rooms',
+  path: '/owner/rooms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerInventoryRoute = OwnerInventoryRouteImport.update({
+  id: '/owner/inventory',
+  path: '/owner/inventory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerInsightsRoute = OwnerInsightsRouteImport.update({
+  id: '/owner/insights',
+  path: '/owner/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerBlocksRoute = OwnerBlocksRouteImport.update({
+  id: '/owner/blocks',
+  path: '/owner/blocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytZonesRoute = MytZonesRouteImport.update({
+  id: '/myt/zones',
+  path: '/myt/zones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytWarRoomRoute = MytWarRoomRouteImport.update({
+  id: '/myt/war-room',
+  path: '/myt/war-room',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytToursRoute = MytToursRouteImport.update({
+  id: '/myt/tours',
+  path: '/myt/tours',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytTeamRoute = MytTeamRouteImport.update({
+  id: '/myt/team',
+  path: '/myt/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytTcmRoute = MytTcmRouteImport.update({
+  id: '/myt/tcm',
+  path: '/myt/tcm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytSettingsRoute = MytSettingsRouteImport.update({
+  id: '/myt/settings',
+  path: '/myt/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytScoreRoute = MytScoreRouteImport.update({
+  id: '/myt/score',
+  path: '/myt/score',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytScheduleRoute = MytScheduleRouteImport.update({
+  id: '/myt/schedule',
+  path: '/myt/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytPropertiesRoute = MytPropertiesRouteImport.update({
+  id: '/myt/properties',
+  path: '/myt/properties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytOwnersCompareRoute = MytOwnersCompareRouteImport.update({
+  id: '/myt/owners-compare',
+  path: '/myt/owners-compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytMismatchRoute = MytMismatchRouteImport.update({
+  id: '/myt/mismatch',
+  path: '/myt/mismatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytMarketplaceRoute = MytMarketplaceRouteImport.update({
+  id: '/myt/marketplace',
+  path: '/myt/marketplace',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytLeadsRoute = MytLeadsRouteImport.update({
+  id: '/myt/leads',
+  path: '/myt/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytLeaderboardRoute = MytLeaderboardRouteImport.update({
+  id: '/myt/leaderboard',
+  path: '/myt/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytInventoryFeedbackRoute = MytInventoryFeedbackRouteImport.update({
+  id: '/myt/inventory-feedback',
+  path: '/myt/inventory-feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytFunnelRoute = MytFunnelRouteImport.update({
+  id: '/myt/funnel',
+  path: '/myt/funnel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytFlowOpsRoute = MytFlowOpsRouteImport.update({
+  id: '/myt/flow-ops',
+  path: '/myt/flow-ops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytDraftsRoute = MytDraftsRouteImport.update({
+  id: '/myt/drafts',
+  path: '/myt/drafts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytCalendarRoute = MytCalendarRouteImport.update({
+  id: '/myt/calendar',
+  path: '/myt/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytBookingsRoute = MytBookingsRouteImport.update({
+  id: '/myt/bookings',
+  path: '/myt/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeadsAddRoute = LeadsAddRouteImport.update({
+  id: '/add',
+  path: '/add',
+  getParentRoute: () => LeadsRoute,
+} as any)
+const OwnerMediaRoomIdRoute = OwnerMediaRoomIdRouteImport.update({
+  id: '/owner/media/$roomId',
+  path: '/owner/media/$roomId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytTourIdRoute = MytTourIdRouteImport.update({
+  id: '/myt/tour/$id',
+  path: '/myt/tour/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytTcmPerformanceRoute = MytTcmPerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
+  getParentRoute: () => MytTcmRoute,
+} as any)
+const MytTcmActionsRoute = MytTcmActionsRouteImport.update({
+  id: '/actions',
+  path: '/actions',
+  getParentRoute: () => MytTcmRoute,
+} as any)
+const MytFeedbackIdRoute = MytFeedbackIdRouteImport.update({
+  id: '/myt/feedback/$id',
+  path: '/myt/feedback/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MytTourIdReportRoute = MytTourIdReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => MytTourIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
+  '/calendar': typeof CalendarRoute
+  '/coach': typeof CoachRoute
+  '/follow-ups': typeof FollowUpsRoute
+  '/handoffs': typeof HandoffsRoute
+  '/health': typeof HealthRoute
+  '/heatmap': typeof HeatmapRoute
+  '/help': typeof HelpRoute
+  '/inbox': typeof InboxRoute
+  '/inventory': typeof InventoryRoute
+  '/leaderboard': typeof LeaderboardRoute
+  '/leads': typeof LeadsRouteWithChildren
+  '/manager': typeof ManagerRoute
+  '/queue': typeof QueueRoute
+  '/revenue': typeof RevenueRoute
+  '/revival': typeof RevivalRoute
+  '/sequences': typeof SequencesRoute
+  '/settings': typeof SettingsRoute
+  '/today': typeof TodayRoute
+  '/tours': typeof ToursRoute
+  '/zone-brain': typeof ZoneBrainRoute
+  '/leads/add': typeof LeadsAddRoute
+  '/myt/bookings': typeof MytBookingsRoute
+  '/myt/calendar': typeof MytCalendarRoute
+  '/myt/drafts': typeof MytDraftsRoute
+  '/myt/flow-ops': typeof MytFlowOpsRoute
+  '/myt/funnel': typeof MytFunnelRoute
+  '/myt/inventory-feedback': typeof MytInventoryFeedbackRoute
+  '/myt/leaderboard': typeof MytLeaderboardRoute
+  '/myt/leads': typeof MytLeadsRoute
+  '/myt/marketplace': typeof MytMarketplaceRoute
+  '/myt/mismatch': typeof MytMismatchRoute
+  '/myt/owners-compare': typeof MytOwnersCompareRoute
+  '/myt/properties': typeof MytPropertiesRoute
+  '/myt/schedule': typeof MytScheduleRoute
+  '/myt/score': typeof MytScoreRoute
+  '/myt/settings': typeof MytSettingsRoute
+  '/myt/tcm': typeof MytTcmRouteWithChildren
+  '/myt/team': typeof MytTeamRoute
+  '/myt/tours': typeof MytToursRoute
+  '/myt/war-room': typeof MytWarRoomRoute
+  '/myt/zones': typeof MytZonesRoute
+  '/owner/blocks': typeof OwnerBlocksRoute
+  '/owner/insights': typeof OwnerInsightsRoute
+  '/owner/inventory': typeof OwnerInventoryRoute
+  '/owner/rooms': typeof OwnerRoomsRoute
+  '/owner/visits': typeof OwnerVisitsRoute
+  '/supply-hub/$id': typeof SupplyHubIdRoute
+  '/supply-hub/areas': typeof SupplyHubAreasRoute
+  '/supply-hub/match': typeof SupplyHubMatchRoute
+  '/myt/': typeof MytIndexRoute
+  '/owner/': typeof OwnerIndexRoute
+  '/supply-hub/': typeof SupplyHubIndexRoute
+  '/myt/feedback/$id': typeof MytFeedbackIdRoute
+  '/myt/tcm/actions': typeof MytTcmActionsRoute
+  '/myt/tcm/performance': typeof MytTcmPerformanceRoute
+  '/myt/tour/$id': typeof MytTourIdRouteWithChildren
+  '/owner/media/$roomId': typeof OwnerMediaRoomIdRoute
+  '/myt/tour/$id/report': typeof MytTourIdReportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
+  '/calendar': typeof CalendarRoute
+  '/coach': typeof CoachRoute
+  '/follow-ups': typeof FollowUpsRoute
+  '/handoffs': typeof HandoffsRoute
+  '/health': typeof HealthRoute
+  '/heatmap': typeof HeatmapRoute
+  '/help': typeof HelpRoute
+  '/inbox': typeof InboxRoute
+  '/inventory': typeof InventoryRoute
+  '/leaderboard': typeof LeaderboardRoute
+  '/leads': typeof LeadsRouteWithChildren
+  '/manager': typeof ManagerRoute
+  '/queue': typeof QueueRoute
+  '/revenue': typeof RevenueRoute
+  '/revival': typeof RevivalRoute
+  '/sequences': typeof SequencesRoute
+  '/settings': typeof SettingsRoute
+  '/today': typeof TodayRoute
+  '/tours': typeof ToursRoute
+  '/zone-brain': typeof ZoneBrainRoute
+  '/leads/add': typeof LeadsAddRoute
+  '/myt/bookings': typeof MytBookingsRoute
+  '/myt/calendar': typeof MytCalendarRoute
+  '/myt/drafts': typeof MytDraftsRoute
+  '/myt/flow-ops': typeof MytFlowOpsRoute
+  '/myt/funnel': typeof MytFunnelRoute
+  '/myt/inventory-feedback': typeof MytInventoryFeedbackRoute
+  '/myt/leaderboard': typeof MytLeaderboardRoute
+  '/myt/leads': typeof MytLeadsRoute
+  '/myt/marketplace': typeof MytMarketplaceRoute
+  '/myt/mismatch': typeof MytMismatchRoute
+  '/myt/owners-compare': typeof MytOwnersCompareRoute
+  '/myt/properties': typeof MytPropertiesRoute
+  '/myt/schedule': typeof MytScheduleRoute
+  '/myt/score': typeof MytScoreRoute
+  '/myt/settings': typeof MytSettingsRoute
+  '/myt/tcm': typeof MytTcmRouteWithChildren
+  '/myt/team': typeof MytTeamRoute
+  '/myt/tours': typeof MytToursRoute
+  '/myt/war-room': typeof MytWarRoomRoute
+  '/myt/zones': typeof MytZonesRoute
+  '/owner/blocks': typeof OwnerBlocksRoute
+  '/owner/insights': typeof OwnerInsightsRoute
+  '/owner/inventory': typeof OwnerInventoryRoute
+  '/owner/rooms': typeof OwnerRoomsRoute
+  '/owner/visits': typeof OwnerVisitsRoute
+  '/supply-hub/$id': typeof SupplyHubIdRoute
+  '/supply-hub/areas': typeof SupplyHubAreasRoute
+  '/supply-hub/match': typeof SupplyHubMatchRoute
+  '/myt': typeof MytIndexRoute
+  '/owner': typeof OwnerIndexRoute
+  '/supply-hub': typeof SupplyHubIndexRoute
+  '/myt/feedback/$id': typeof MytFeedbackIdRoute
+  '/myt/tcm/actions': typeof MytTcmActionsRoute
+  '/myt/tcm/performance': typeof MytTcmPerformanceRoute
+  '/myt/tour/$id': typeof MytTourIdRouteWithChildren
+  '/owner/media/$roomId': typeof OwnerMediaRoomIdRoute
+  '/myt/tour/$id/report': typeof MytTourIdReportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
+  '/calendar': typeof CalendarRoute
+  '/coach': typeof CoachRoute
+  '/follow-ups': typeof FollowUpsRoute
+  '/handoffs': typeof HandoffsRoute
+  '/health': typeof HealthRoute
+  '/heatmap': typeof HeatmapRoute
+  '/help': typeof HelpRoute
+  '/inbox': typeof InboxRoute
+  '/inventory': typeof InventoryRoute
+  '/leaderboard': typeof LeaderboardRoute
+  '/leads': typeof LeadsRouteWithChildren
+  '/manager': typeof ManagerRoute
+  '/queue': typeof QueueRoute
+  '/revenue': typeof RevenueRoute
+  '/revival': typeof RevivalRoute
+  '/sequences': typeof SequencesRoute
+  '/settings': typeof SettingsRoute
+  '/today': typeof TodayRoute
+  '/tours': typeof ToursRoute
+  '/zone-brain': typeof ZoneBrainRoute
+  '/leads/add': typeof LeadsAddRoute
+  '/myt/bookings': typeof MytBookingsRoute
+  '/myt/calendar': typeof MytCalendarRoute
+  '/myt/drafts': typeof MytDraftsRoute
+  '/myt/flow-ops': typeof MytFlowOpsRoute
+  '/myt/funnel': typeof MytFunnelRoute
+  '/myt/inventory-feedback': typeof MytInventoryFeedbackRoute
+  '/myt/leaderboard': typeof MytLeaderboardRoute
+  '/myt/leads': typeof MytLeadsRoute
+  '/myt/marketplace': typeof MytMarketplaceRoute
+  '/myt/mismatch': typeof MytMismatchRoute
+  '/myt/owners-compare': typeof MytOwnersCompareRoute
+  '/myt/properties': typeof MytPropertiesRoute
+  '/myt/schedule': typeof MytScheduleRoute
+  '/myt/score': typeof MytScoreRoute
+  '/myt/settings': typeof MytSettingsRoute
+  '/myt/tcm': typeof MytTcmRouteWithChildren
+  '/myt/team': typeof MytTeamRoute
+  '/myt/tours': typeof MytToursRoute
+  '/myt/war-room': typeof MytWarRoomRoute
+  '/myt/zones': typeof MytZonesRoute
+  '/owner/blocks': typeof OwnerBlocksRoute
+  '/owner/insights': typeof OwnerInsightsRoute
+  '/owner/inventory': typeof OwnerInventoryRoute
+  '/owner/rooms': typeof OwnerRoomsRoute
+  '/owner/visits': typeof OwnerVisitsRoute
+  '/supply-hub/$id': typeof SupplyHubIdRoute
+  '/supply-hub/areas': typeof SupplyHubAreasRoute
+  '/supply-hub/match': typeof SupplyHubMatchRoute
+  '/myt/': typeof MytIndexRoute
+  '/owner/': typeof OwnerIndexRoute
+  '/supply-hub/': typeof SupplyHubIndexRoute
+  '/myt/feedback/$id': typeof MytFeedbackIdRoute
+  '/myt/tcm/actions': typeof MytTcmActionsRoute
+  '/myt/tcm/performance': typeof MytTcmPerformanceRoute
+  '/myt/tour/$id': typeof MytTourIdRouteWithChildren
+  '/owner/media/$roomId': typeof OwnerMediaRoomIdRoute
+  '/myt/tour/$id/report': typeof MytTourIdReportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/activity'
+    | '/calendar'
+    | '/coach'
+    | '/follow-ups'
+    | '/handoffs'
+    | '/health'
+    | '/heatmap'
+    | '/help'
+    | '/inbox'
+    | '/inventory'
+    | '/leaderboard'
+    | '/leads'
+    | '/manager'
+    | '/queue'
+    | '/revenue'
+    | '/revival'
+    | '/sequences'
+    | '/settings'
+    | '/today'
+    | '/tours'
+    | '/zone-brain'
+    | '/leads/add'
+    | '/myt/bookings'
+    | '/myt/calendar'
+    | '/myt/drafts'
+    | '/myt/flow-ops'
+    | '/myt/funnel'
+    | '/myt/inventory-feedback'
+    | '/myt/leaderboard'
+    | '/myt/leads'
+    | '/myt/marketplace'
+    | '/myt/mismatch'
+    | '/myt/owners-compare'
+    | '/myt/properties'
+    | '/myt/schedule'
+    | '/myt/score'
+    | '/myt/settings'
+    | '/myt/tcm'
+    | '/myt/team'
+    | '/myt/tours'
+    | '/myt/war-room'
+    | '/myt/zones'
+    | '/owner/blocks'
+    | '/owner/insights'
+    | '/owner/inventory'
+    | '/owner/rooms'
+    | '/owner/visits'
+    | '/supply-hub/$id'
+    | '/supply-hub/areas'
+    | '/supply-hub/match'
+    | '/myt/'
+    | '/owner/'
+    | '/supply-hub/'
+    | '/myt/feedback/$id'
+    | '/myt/tcm/actions'
+    | '/myt/tcm/performance'
+    | '/myt/tour/$id'
+    | '/owner/media/$roomId'
+    | '/myt/tour/$id/report'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/activity'
+    | '/calendar'
+    | '/coach'
+    | '/follow-ups'
+    | '/handoffs'
+    | '/health'
+    | '/heatmap'
+    | '/help'
+    | '/inbox'
+    | '/inventory'
+    | '/leaderboard'
+    | '/leads'
+    | '/manager'
+    | '/queue'
+    | '/revenue'
+    | '/revival'
+    | '/sequences'
+    | '/settings'
+    | '/today'
+    | '/tours'
+    | '/zone-brain'
+    | '/leads/add'
+    | '/myt/bookings'
+    | '/myt/calendar'
+    | '/myt/drafts'
+    | '/myt/flow-ops'
+    | '/myt/funnel'
+    | '/myt/inventory-feedback'
+    | '/myt/leaderboard'
+    | '/myt/leads'
+    | '/myt/marketplace'
+    | '/myt/mismatch'
+    | '/myt/owners-compare'
+    | '/myt/properties'
+    | '/myt/schedule'
+    | '/myt/score'
+    | '/myt/settings'
+    | '/myt/tcm'
+    | '/myt/team'
+    | '/myt/tours'
+    | '/myt/war-room'
+    | '/myt/zones'
+    | '/owner/blocks'
+    | '/owner/insights'
+    | '/owner/inventory'
+    | '/owner/rooms'
+    | '/owner/visits'
+    | '/supply-hub/$id'
+    | '/supply-hub/areas'
+    | '/supply-hub/match'
+    | '/myt'
+    | '/owner'
+    | '/supply-hub'
+    | '/myt/feedback/$id'
+    | '/myt/tcm/actions'
+    | '/myt/tcm/performance'
+    | '/myt/tour/$id'
+    | '/owner/media/$roomId'
+    | '/myt/tour/$id/report'
+  id:
+    | '__root__'
+    | '/'
+    | '/activity'
+    | '/calendar'
+    | '/coach'
+    | '/follow-ups'
+    | '/handoffs'
+    | '/health'
+    | '/heatmap'
+    | '/help'
+    | '/inbox'
+    | '/inventory'
+    | '/leaderboard'
+    | '/leads'
+    | '/manager'
+    | '/queue'
+    | '/revenue'
+    | '/revival'
+    | '/sequences'
+    | '/settings'
+    | '/today'
+    | '/tours'
+    | '/zone-brain'
+    | '/leads/add'
+    | '/myt/bookings'
+    | '/myt/calendar'
+    | '/myt/drafts'
+    | '/myt/flow-ops'
+    | '/myt/funnel'
+    | '/myt/inventory-feedback'
+    | '/myt/leaderboard'
+    | '/myt/leads'
+    | '/myt/marketplace'
+    | '/myt/mismatch'
+    | '/myt/owners-compare'
+    | '/myt/properties'
+    | '/myt/schedule'
+    | '/myt/score'
+    | '/myt/settings'
+    | '/myt/tcm'
+    | '/myt/team'
+    | '/myt/tours'
+    | '/myt/war-room'
+    | '/myt/zones'
+    | '/owner/blocks'
+    | '/owner/insights'
+    | '/owner/inventory'
+    | '/owner/rooms'
+    | '/owner/visits'
+    | '/supply-hub/$id'
+    | '/supply-hub/areas'
+    | '/supply-hub/match'
+    | '/myt/'
+    | '/owner/'
+    | '/supply-hub/'
+    | '/myt/feedback/$id'
+    | '/myt/tcm/actions'
+    | '/myt/tcm/performance'
+    | '/myt/tour/$id'
+    | '/owner/media/$roomId'
+    | '/myt/tour/$id/report'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivityRoute: typeof ActivityRoute
+  CalendarRoute: typeof CalendarRoute
+  CoachRoute: typeof CoachRoute
+  FollowUpsRoute: typeof FollowUpsRoute
+  HandoffsRoute: typeof HandoffsRoute
+  HealthRoute: typeof HealthRoute
+  HeatmapRoute: typeof HeatmapRoute
+  HelpRoute: typeof HelpRoute
+  InboxRoute: typeof InboxRoute
+  InventoryRoute: typeof InventoryRoute
+  LeaderboardRoute: typeof LeaderboardRoute
+  LeadsRoute: typeof LeadsRouteWithChildren
+  ManagerRoute: typeof ManagerRoute
+  QueueRoute: typeof QueueRoute
+  RevenueRoute: typeof RevenueRoute
+  RevivalRoute: typeof RevivalRoute
+  SequencesRoute: typeof SequencesRoute
+  SettingsRoute: typeof SettingsRoute
+  TodayRoute: typeof TodayRoute
+  ToursRoute: typeof ToursRoute
+  ZoneBrainRoute: typeof ZoneBrainRoute
+  MytBookingsRoute: typeof MytBookingsRoute
+  MytCalendarRoute: typeof MytCalendarRoute
+  MytDraftsRoute: typeof MytDraftsRoute
+  MytFlowOpsRoute: typeof MytFlowOpsRoute
+  MytFunnelRoute: typeof MytFunnelRoute
+  MytInventoryFeedbackRoute: typeof MytInventoryFeedbackRoute
+  MytLeaderboardRoute: typeof MytLeaderboardRoute
+  MytLeadsRoute: typeof MytLeadsRoute
+  MytMarketplaceRoute: typeof MytMarketplaceRoute
+  MytMismatchRoute: typeof MytMismatchRoute
+  MytOwnersCompareRoute: typeof MytOwnersCompareRoute
+  MytPropertiesRoute: typeof MytPropertiesRoute
+  MytScheduleRoute: typeof MytScheduleRoute
+  MytScoreRoute: typeof MytScoreRoute
+  MytSettingsRoute: typeof MytSettingsRoute
+  MytTcmRoute: typeof MytTcmRouteWithChildren
+  MytTeamRoute: typeof MytTeamRoute
+  MytToursRoute: typeof MytToursRoute
+  MytWarRoomRoute: typeof MytWarRoomRoute
+  MytZonesRoute: typeof MytZonesRoute
+  OwnerBlocksRoute: typeof OwnerBlocksRoute
+  OwnerInsightsRoute: typeof OwnerInsightsRoute
+  OwnerInventoryRoute: typeof OwnerInventoryRoute
+  OwnerRoomsRoute: typeof OwnerRoomsRoute
+  OwnerVisitsRoute: typeof OwnerVisitsRoute
+  SupplyHubIdRoute: typeof SupplyHubIdRoute
+  SupplyHubAreasRoute: typeof SupplyHubAreasRoute
+  SupplyHubMatchRoute: typeof SupplyHubMatchRoute
+  MytIndexRoute: typeof MytIndexRoute
+  OwnerIndexRoute: typeof OwnerIndexRoute
+  SupplyHubIndexRoute: typeof SupplyHubIndexRoute
+  MytFeedbackIdRoute: typeof MytFeedbackIdRoute
+  MytTourIdRoute: typeof MytTourIdRouteWithChildren
+  OwnerMediaRoomIdRoute: typeof OwnerMediaRoomIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/zone-brain': {
+      id: '/zone-brain'
+      path: '/zone-brain'
+      fullPath: '/zone-brain'
+      preLoaderRoute: typeof ZoneBrainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tours': {
+      id: '/tours'
+      path: '/tours'
+      fullPath: '/tours'
+      preLoaderRoute: typeof ToursRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/today': {
+      id: '/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof TodayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sequences': {
+      id: '/sequences'
+      path: '/sequences'
+      fullPath: '/sequences'
+      preLoaderRoute: typeof SequencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revival': {
+      id: '/revival'
+      path: '/revival'
+      fullPath: '/revival'
+      preLoaderRoute: typeof RevivalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revenue': {
+      id: '/revenue'
+      path: '/revenue'
+      fullPath: '/revenue'
+      preLoaderRoute: typeof RevenueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/queue': {
+      id: '/queue'
+      path: '/queue'
+      fullPath: '/queue'
+      preLoaderRoute: typeof QueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manager': {
+      id: '/manager'
+      path: '/manager'
+      fullPath: '/manager'
+      preLoaderRoute: typeof ManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leads': {
+      id: '/leads'
+      path: '/leads'
+      fullPath: '/leads'
+      preLoaderRoute: typeof LeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventory': {
+      id: '/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof InventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/heatmap': {
+      id: '/heatmap'
+      path: '/heatmap'
+      fullPath: '/heatmap'
+      preLoaderRoute: typeof HeatmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/health': {
+      id: '/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof HealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/handoffs': {
+      id: '/handoffs'
+      path: '/handoffs'
+      fullPath: '/handoffs'
+      preLoaderRoute: typeof HandoffsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/follow-ups': {
+      id: '/follow-ups'
+      path: '/follow-ups'
+      fullPath: '/follow-ups'
+      preLoaderRoute: typeof FollowUpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/coach': {
+      id: '/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof CoachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,21 +962,368 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/supply-hub/': {
+      id: '/supply-hub/'
+      path: '/supply-hub'
+      fullPath: '/supply-hub/'
+      preLoaderRoute: typeof SupplyHubIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/': {
+      id: '/owner/'
+      path: '/owner'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof OwnerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/': {
+      id: '/myt/'
+      path: '/myt'
+      fullPath: '/myt/'
+      preLoaderRoute: typeof MytIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/supply-hub/match': {
+      id: '/supply-hub/match'
+      path: '/supply-hub/match'
+      fullPath: '/supply-hub/match'
+      preLoaderRoute: typeof SupplyHubMatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/supply-hub/areas': {
+      id: '/supply-hub/areas'
+      path: '/supply-hub/areas'
+      fullPath: '/supply-hub/areas'
+      preLoaderRoute: typeof SupplyHubAreasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/supply-hub/$id': {
+      id: '/supply-hub/$id'
+      path: '/supply-hub/$id'
+      fullPath: '/supply-hub/$id'
+      preLoaderRoute: typeof SupplyHubIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/visits': {
+      id: '/owner/visits'
+      path: '/owner/visits'
+      fullPath: '/owner/visits'
+      preLoaderRoute: typeof OwnerVisitsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/rooms': {
+      id: '/owner/rooms'
+      path: '/owner/rooms'
+      fullPath: '/owner/rooms'
+      preLoaderRoute: typeof OwnerRoomsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/inventory': {
+      id: '/owner/inventory'
+      path: '/owner/inventory'
+      fullPath: '/owner/inventory'
+      preLoaderRoute: typeof OwnerInventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/insights': {
+      id: '/owner/insights'
+      path: '/owner/insights'
+      fullPath: '/owner/insights'
+      preLoaderRoute: typeof OwnerInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/blocks': {
+      id: '/owner/blocks'
+      path: '/owner/blocks'
+      fullPath: '/owner/blocks'
+      preLoaderRoute: typeof OwnerBlocksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/zones': {
+      id: '/myt/zones'
+      path: '/myt/zones'
+      fullPath: '/myt/zones'
+      preLoaderRoute: typeof MytZonesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/war-room': {
+      id: '/myt/war-room'
+      path: '/myt/war-room'
+      fullPath: '/myt/war-room'
+      preLoaderRoute: typeof MytWarRoomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/tours': {
+      id: '/myt/tours'
+      path: '/myt/tours'
+      fullPath: '/myt/tours'
+      preLoaderRoute: typeof MytToursRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/team': {
+      id: '/myt/team'
+      path: '/myt/team'
+      fullPath: '/myt/team'
+      preLoaderRoute: typeof MytTeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/tcm': {
+      id: '/myt/tcm'
+      path: '/myt/tcm'
+      fullPath: '/myt/tcm'
+      preLoaderRoute: typeof MytTcmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/settings': {
+      id: '/myt/settings'
+      path: '/myt/settings'
+      fullPath: '/myt/settings'
+      preLoaderRoute: typeof MytSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/score': {
+      id: '/myt/score'
+      path: '/myt/score'
+      fullPath: '/myt/score'
+      preLoaderRoute: typeof MytScoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/schedule': {
+      id: '/myt/schedule'
+      path: '/myt/schedule'
+      fullPath: '/myt/schedule'
+      preLoaderRoute: typeof MytScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/properties': {
+      id: '/myt/properties'
+      path: '/myt/properties'
+      fullPath: '/myt/properties'
+      preLoaderRoute: typeof MytPropertiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/owners-compare': {
+      id: '/myt/owners-compare'
+      path: '/myt/owners-compare'
+      fullPath: '/myt/owners-compare'
+      preLoaderRoute: typeof MytOwnersCompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/mismatch': {
+      id: '/myt/mismatch'
+      path: '/myt/mismatch'
+      fullPath: '/myt/mismatch'
+      preLoaderRoute: typeof MytMismatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/marketplace': {
+      id: '/myt/marketplace'
+      path: '/myt/marketplace'
+      fullPath: '/myt/marketplace'
+      preLoaderRoute: typeof MytMarketplaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/leads': {
+      id: '/myt/leads'
+      path: '/myt/leads'
+      fullPath: '/myt/leads'
+      preLoaderRoute: typeof MytLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/leaderboard': {
+      id: '/myt/leaderboard'
+      path: '/myt/leaderboard'
+      fullPath: '/myt/leaderboard'
+      preLoaderRoute: typeof MytLeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/inventory-feedback': {
+      id: '/myt/inventory-feedback'
+      path: '/myt/inventory-feedback'
+      fullPath: '/myt/inventory-feedback'
+      preLoaderRoute: typeof MytInventoryFeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/funnel': {
+      id: '/myt/funnel'
+      path: '/myt/funnel'
+      fullPath: '/myt/funnel'
+      preLoaderRoute: typeof MytFunnelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/flow-ops': {
+      id: '/myt/flow-ops'
+      path: '/myt/flow-ops'
+      fullPath: '/myt/flow-ops'
+      preLoaderRoute: typeof MytFlowOpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/drafts': {
+      id: '/myt/drafts'
+      path: '/myt/drafts'
+      fullPath: '/myt/drafts'
+      preLoaderRoute: typeof MytDraftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/calendar': {
+      id: '/myt/calendar'
+      path: '/myt/calendar'
+      fullPath: '/myt/calendar'
+      preLoaderRoute: typeof MytCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/bookings': {
+      id: '/myt/bookings'
+      path: '/myt/bookings'
+      fullPath: '/myt/bookings'
+      preLoaderRoute: typeof MytBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leads/add': {
+      id: '/leads/add'
+      path: '/add'
+      fullPath: '/leads/add'
+      preLoaderRoute: typeof LeadsAddRouteImport
+      parentRoute: typeof LeadsRoute
+    }
+    '/owner/media/$roomId': {
+      id: '/owner/media/$roomId'
+      path: '/owner/media/$roomId'
+      fullPath: '/owner/media/$roomId'
+      preLoaderRoute: typeof OwnerMediaRoomIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/tour/$id': {
+      id: '/myt/tour/$id'
+      path: '/myt/tour/$id'
+      fullPath: '/myt/tour/$id'
+      preLoaderRoute: typeof MytTourIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/tcm/performance': {
+      id: '/myt/tcm/performance'
+      path: '/performance'
+      fullPath: '/myt/tcm/performance'
+      preLoaderRoute: typeof MytTcmPerformanceRouteImport
+      parentRoute: typeof MytTcmRoute
+    }
+    '/myt/tcm/actions': {
+      id: '/myt/tcm/actions'
+      path: '/actions'
+      fullPath: '/myt/tcm/actions'
+      preLoaderRoute: typeof MytTcmActionsRouteImport
+      parentRoute: typeof MytTcmRoute
+    }
+    '/myt/feedback/$id': {
+      id: '/myt/feedback/$id'
+      path: '/myt/feedback/$id'
+      fullPath: '/myt/feedback/$id'
+      preLoaderRoute: typeof MytFeedbackIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/myt/tour/$id/report': {
+      id: '/myt/tour/$id/report'
+      path: '/report'
+      fullPath: '/myt/tour/$id/report'
+      preLoaderRoute: typeof MytTourIdReportRouteImport
+      parentRoute: typeof MytTourIdRoute
+    }
   }
 }
 
+interface LeadsRouteChildren {
+  LeadsAddRoute: typeof LeadsAddRoute
+}
+
+const LeadsRouteChildren: LeadsRouteChildren = {
+  LeadsAddRoute: LeadsAddRoute,
+}
+
+const LeadsRouteWithChildren = LeadsRoute._addFileChildren(LeadsRouteChildren)
+
+interface MytTcmRouteChildren {
+  MytTcmActionsRoute: typeof MytTcmActionsRoute
+  MytTcmPerformanceRoute: typeof MytTcmPerformanceRoute
+}
+
+const MytTcmRouteChildren: MytTcmRouteChildren = {
+  MytTcmActionsRoute: MytTcmActionsRoute,
+  MytTcmPerformanceRoute: MytTcmPerformanceRoute,
+}
+
+const MytTcmRouteWithChildren =
+  MytTcmRoute._addFileChildren(MytTcmRouteChildren)
+
+interface MytTourIdRouteChildren {
+  MytTourIdReportRoute: typeof MytTourIdReportRoute
+}
+
+const MytTourIdRouteChildren: MytTourIdRouteChildren = {
+  MytTourIdReportRoute: MytTourIdReportRoute,
+}
+
+const MytTourIdRouteWithChildren = MytTourIdRoute._addFileChildren(
+  MytTourIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivityRoute: ActivityRoute,
+  CalendarRoute: CalendarRoute,
+  CoachRoute: CoachRoute,
+  FollowUpsRoute: FollowUpsRoute,
+  HandoffsRoute: HandoffsRoute,
+  HealthRoute: HealthRoute,
+  HeatmapRoute: HeatmapRoute,
+  HelpRoute: HelpRoute,
+  InboxRoute: InboxRoute,
+  InventoryRoute: InventoryRoute,
+  LeaderboardRoute: LeaderboardRoute,
+  LeadsRoute: LeadsRouteWithChildren,
+  ManagerRoute: ManagerRoute,
+  QueueRoute: QueueRoute,
+  RevenueRoute: RevenueRoute,
+  RevivalRoute: RevivalRoute,
+  SequencesRoute: SequencesRoute,
+  SettingsRoute: SettingsRoute,
+  TodayRoute: TodayRoute,
+  ToursRoute: ToursRoute,
+  ZoneBrainRoute: ZoneBrainRoute,
+  MytBookingsRoute: MytBookingsRoute,
+  MytCalendarRoute: MytCalendarRoute,
+  MytDraftsRoute: MytDraftsRoute,
+  MytFlowOpsRoute: MytFlowOpsRoute,
+  MytFunnelRoute: MytFunnelRoute,
+  MytInventoryFeedbackRoute: MytInventoryFeedbackRoute,
+  MytLeaderboardRoute: MytLeaderboardRoute,
+  MytLeadsRoute: MytLeadsRoute,
+  MytMarketplaceRoute: MytMarketplaceRoute,
+  MytMismatchRoute: MytMismatchRoute,
+  MytOwnersCompareRoute: MytOwnersCompareRoute,
+  MytPropertiesRoute: MytPropertiesRoute,
+  MytScheduleRoute: MytScheduleRoute,
+  MytScoreRoute: MytScoreRoute,
+  MytSettingsRoute: MytSettingsRoute,
+  MytTcmRoute: MytTcmRouteWithChildren,
+  MytTeamRoute: MytTeamRoute,
+  MytToursRoute: MytToursRoute,
+  MytWarRoomRoute: MytWarRoomRoute,
+  MytZonesRoute: MytZonesRoute,
+  OwnerBlocksRoute: OwnerBlocksRoute,
+  OwnerInsightsRoute: OwnerInsightsRoute,
+  OwnerInventoryRoute: OwnerInventoryRoute,
+  OwnerRoomsRoute: OwnerRoomsRoute,
+  OwnerVisitsRoute: OwnerVisitsRoute,
+  SupplyHubIdRoute: SupplyHubIdRoute,
+  SupplyHubAreasRoute: SupplyHubAreasRoute,
+  SupplyHubMatchRoute: SupplyHubMatchRoute,
+  MytIndexRoute: MytIndexRoute,
+  OwnerIndexRoute: OwnerIndexRoute,
+  SupplyHubIndexRoute: SupplyHubIndexRoute,
+  MytFeedbackIdRoute: MytFeedbackIdRoute,
+  MytTourIdRoute: MytTourIdRouteWithChildren,
+  OwnerMediaRoomIdRoute: OwnerMediaRoomIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
