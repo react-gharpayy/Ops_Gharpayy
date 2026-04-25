@@ -1,32 +1,36 @@
 import { PictureInPicture2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { usePip } from "./PipProvider";
+import { usePip, type PipMode } from "./PipProvider";
 
-export function PipButton({ className }: { className?: string }) {
-  const { open, close, active, supported } = usePip();
+export function PipButton({ className, mode = "dashboard", label }: { className?: string; mode?: PipMode; label?: string }) {
+  const { open, close, active, supported, mode: activeMode } = usePip();
 
   return (
     <Button
-      variant={active ? "secondary" : "default"}
+      variant={active && activeMode === mode ? "secondary" : "default"}
       size="sm"
-      onClick={() => (active ? close() : open())}
+      onClick={() => (active && activeMode === mode ? close() : open(mode))}
       disabled={!supported && !active}
       className={cn(
         "gap-1.5 h-8 text-xs font-medium shadow-sm",
-        active && "bg-primary/15 text-primary hover:bg-primary/20",
+        active && activeMode === mode && "bg-primary/15 text-primary hover:bg-primary/20",
         className,
       )}
       title={
         !supported
           ? "PiP needs Chrome, Edge, Brave or Opera on desktop"
-          : active
-          ? "Close the floating dashboard window"
+          : active && activeMode === mode
+          ? "Close this Picture-in-Picture window"
+          : mode === "capture"
+          ? "Open lead capture PiP over WhatsApp"
+          : mode === "manage"
+          ? "Open lead management PiP over WhatsApp"
           : "Pop the dashboard out as a floating always-on-top window over WhatsApp"
       }
     >
-      {active ? <X className="h-3.5 w-3.5" /> : <PictureInPicture2 className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{active ? "Exit PiP" : "PiP mode"}</span>
+      {active && activeMode === mode ? <X className="h-3.5 w-3.5" /> : <PictureInPicture2 className="h-3.5 w-3.5" />}
+      <span className="hidden sm:inline">{active && activeMode === mode ? "Exit PiP" : (label ?? "PiP mode")}</span>
     </Button>
   );
 }
