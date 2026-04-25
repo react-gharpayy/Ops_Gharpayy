@@ -81,7 +81,10 @@ export function detectZone(rawText: string): string {
   return "";
 }
 
-const EMOJI_RE = /[📝📱✉️📍💰📆📅👨🏢👫✨💥💯⚡🔥💛😘🏠🎯👥📞👤💼🛏️]/g;
+const EMOJI_RE = /[📝📱✉️📍💰📆📅👨🏢👫✨💥💯⚡🔥💛😘🏠🎯👥📞👤💼🛏️🥵✅❌⭐]/g;
+
+const NULL_WORD_RE = /\b(?:name|form|full|thank\s*you|thanks|gharpayy|gharpayy\.com|your\s+superstay\s+awaits|best\s+pg\s+in\s+10\s+minutes|18\s*sec|aayushi\s+from\s+gharpayy|not\s+filled)\b/gi;
+const LINK_RE = /(?:https?:\/\/|www\.)\S+|\b(?:maps\.app\.goo\.gl|goo\.gl|bit\.ly)\/\S+/gi;
 
 const LOCATION_HINTS = [
   ...ZONES.flatMap((z) => z.keywords),
@@ -175,6 +178,19 @@ function normalizeRoom(text: string): string {
   return "";
 }
 
+function extractLinks(text: string): string[] {
+  return [...new Set((text.match(LINK_RE) ?? []).map((u) => u.replace(/[),.;]+$/g, "")))];
+}
+
+function extractBudgets(text: string): string[] {
+  const matches = text.match(/(?:under\s*)?₹?\s*\d{1,2}(?:\.\d+)?\s*(?:k|K|000)?\s*(?:[-–to\/]+\s*₹?\s*\d{1,2}(?:\.\d+)?\s*(?:k|K|000)?)?|\b\d{4,6}\s*(?:to|-|–)\s*\d{4,6}\b/g) ?? [];
+  return [...new Set(matches.map((m) => m.replace(/[₹,()]/g, "").replace(/\s+/g, " ").trim()).filter((m) => /\d/.test(m)))].slice(0, 6);
+}
+
+function cleanJunk(text: string): string {
+  return text.replace(NULL_WORD_RE, " ").replace(/[*_`⚡🔥💛🥵]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 /** Title-case a name string, preserving common patronymic letters. */
 function titleCase(name: string): string {
   return name
@@ -189,6 +205,7 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
 
   // Normalise escape sequences and CRLF up front
   const normalised = normalisePaste(raw);
+  const links = extractLinks(normalised);
   const clean = normalised
     .replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1")
     .replace(/_{1,3}([^_\n]+)_{1,3}/g, "$1")
@@ -277,9 +294,11 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   }
 
   // ---------- Budget ----------
+  const budgets = extractBudgets(clean);
   let budget = grab(
     /(?:Actual\s*budget|Budget\s*Range|Budget\s*range|Budget\s*is|Budget|Budjet)\s*[:\-–(]*\s*([^\n)📆👨🏢]{2,80})/i,
   ).replace(/[₹()\[\]]/g, "").replace(/\s+/g, " ").trim();
+  if (!budget && budgets.length) budget = budgets.join(", ");
 
   if (!budget) {
     for (const line of clean.split("\n").map((l) => l.trim())) {
@@ -384,12 +403,33 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   const labeledFull = grab(/Full\s*Address\s*[:\-–]+\s*([^\n]{5,300})/i);
   if (labeledFull) fullAddress = labeledFull;
 
+  const consumedValues = [name, phone, email, location, budget, moveIn, type, room, need, specialReqs, fullAddress, ...links, ...budgets]
+    .filter(Boolean)
+    .map((v) => String(v).toLowerCase());
+  const extraContent = cleanJunk(normalised)
+    .split(/\n|\s{2,}/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 2 && !consumedValues.some((v) => v && part.toLowerCase().includes(v)))
+    .join(" · ")
+    .slice(0, 900);
+  const geoIntel = {
+    query: [location, fullAddress, areas.join(", ")].filter(Boolean).join(" · "),
+    zone,
+    areas,
+    links,
+    confidence: (links.length || areas.length >= 2 ? "high" : location ? "medium" : "low") as "high" | "medium" | "low",
+    distanceHint: links.length ? "Map link attached for distance check" : areas.length ? `Route by ${areas[0]}${areas[1] ? ` + ${areas.length - 1} more area(s)` : ""}` : "Needs location before distance check",
+    syncStatus: (location || areas.length || links.length ? links.length ? "ready" : "needs-map-link" : "needs-location") as "ready" | "needs-map-link" | "needs-location",
+  };
+  const summary = [name || "Unnamed", phone && `☎ ${phone}`, budget && `₹ ${budget}`, moveIn && `move ${moveIn}`, room, need, location || areas.join(", ")]
+    .filter(Boolean).join(" · ");
+
   if (!phone && !email && !name) return null;
 
   return {
     name, phone, email, location, areas, fullAddress,
     budget, moveIn,
-    type, room, need, specialReqs, inBLR, zone,
+    type, room, need, specialReqs, extraContent, summary, budgets, links, geoIntel, inBLR, zone,
     rawSource: raw,
   };
 }

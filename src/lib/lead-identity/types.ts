@@ -38,6 +38,11 @@ export interface UnifiedLead {
   need: string;                 // Boys / Girls / Coed
   inBLR: boolean | null;
   notes: string;
+  extraContent?: string;
+  summary?: string;
+  budgets?: string[];
+  links?: string[];
+  geoIntel?: LeadGeoIntel;
   state: LifecycleState;
   primaryOwnerId: string;
   secondaryOwnerId: string | null;
@@ -125,7 +130,27 @@ export interface ParsedLeadDraft {
   room: string;
   need: string;
   specialReqs: string;
+  /** Leftover useful pasted content that did not fit a structured field. */
+  extraContent?: string;
+  /** Short machine-readable summary of the pasted request. */
+  summary?: string;
+  /** Every budget option detected in the paste, e.g. ["8-12k", "13-16k"]. */
+  budgets?: string[];
+  /** All links preserved from the paste, including maps/app links. */
+  links?: string[];
+  /** Lightweight location intelligence for routing/matching. */
+  geoIntel?: LeadGeoIntel;
   inBLR: boolean | null;
   zone: string;
   rawSource: string;
+}
+
+export interface LeadGeoIntel {
+  query: string;
+  zone: string;
+  areas: string[];
+  links: string[];
+  confidence: "high" | "medium" | "low";
+  distanceHint: string;
+  syncStatus: "ready" | "needs-map-link" | "needs-location";
 }
