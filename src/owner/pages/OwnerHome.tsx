@@ -46,7 +46,7 @@ export function OwnerHome() {
     pendingBlocks.length ? `${pendingBlocks.length} block approval${pendingBlocks.length > 1 ? "s" : ""} waiting` : null,
     locked ? `${locked} locked room${locked > 1 ? "s" : ""} need verification` : null,
     compliance.mediaFreshRooms < compliance.totalRooms ? `${compliance.totalRooms - compliance.mediaFreshRooms} room photo set${compliance.totalRooms - compliance.mediaFreshRooms > 1 ? "s" : ""} stale` : null,
-    activeVisits.length ? `${activeVisits.length} visit${activeVisits.length > 1 ? "s" : ""} scheduled by TCM` : null,
+    activeVisits.length ? `${activeVisits.length} Tour${activeVisits.length > 1 ? "s" : ""} scheduled by TCM` : null,
   ].filter(Boolean) as string[];
 
   // Revenue lens
@@ -202,7 +202,7 @@ export function OwnerHome() {
           </div>
           <div className="flex gap-2 text-[10px] flex-wrap">
             <span className="rounded-full bg-success/10 text-success px-2 py-1">{hotDemand} hot leads nearby</span>
-            <span className="rounded-full bg-info/10 text-info px-2 py-1">{activeVisits.length} scheduled visits</span>
+            <span className="rounded-full bg-info/10 text-info px-2 py-1">{activeVisits.length} scheduled Tours</span>
           </div>
         </div>
         <div className="grid gap-2 md:grid-cols-2">

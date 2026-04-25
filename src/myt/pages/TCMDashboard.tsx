@@ -6,6 +6,8 @@ import { CalendarCheck, TrendingUp, FileText, Target } from 'lucide-react';
 import { Tour } from '@/myt/lib/types';
 import { GlueFeed } from '@/components/GlueFeed';
 import { CoachInline } from '@/components/CoachInline';
+import { bestInventoryFits, availableBedsForProperty } from '@/myt/lib/inventory-intelligence';
+import { rooms as seedRooms, initialBlocks, properties as seedProperties } from '@/myt/lib/properties-seed';
 
 const intentRank: Record<Tour['intent'], number> = { hard: 0, medium: 1, soft: 2 };
 
@@ -55,6 +57,33 @@ export default function TCMDashboard() {
         <MetricCard label="Completed" value={completed} color="green" icon={<TrendingUp className="h-4 w-4" />} />
         <MetricCard label="Show-Up %" value={myTours.length > 0 ? `${Math.round((showUps / myTours.length) * 100)}%` : '0%'} color={showUps / Math.max(1, myTours.length) >= 0.7 ? 'green' : 'red'} />
         <MetricCard label="Bookings" value={drafts} color="amber" icon={<FileText className="h-4 w-4" />} />
+      </div>
+
+      <div className="glass-card p-3 md:p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="font-heading font-semibold text-sm text-foreground">Property Win Cards</h3>
+            <p className="text-xs text-muted-foreground">Close using the room that matches area, budget and live availability.</p>
+          </div>
+          <span className="text-[10px] rounded-full bg-role-tcm/10 px-2 py-1 text-role-tcm">TCM goal: close every Tour</span>
+        </div>
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+          {sortedTours.slice(0, 3).map((tour) => {
+            const fit = bestInventoryFits({ areaText: tour.area, budget: tour.budget, rooms: seedRooms, blocks: initialBlocks, limit: 1 })[0];
+            const prop = seedProperties.find((p) => p.name === tour.propertyName) ?? (fit ? seedProperties.find((p) => p.id === fit.propertyId) : undefined);
+            const inv = prop ? availableBedsForProperty(prop.id, seedRooms, initialBlocks) : null;
+            return (
+              <div key={tour.id} className="rounded-lg border border-border bg-surface-2/40 p-3">
+                <div className="text-sm font-semibold truncate">{tour.leadName}</div>
+                <div className="text-[11px] text-muted-foreground truncate">{prop?.name ?? tour.propertyName} · {inv?.beds ?? fit?.availableBeds ?? 0} beds live</div>
+                <div className="mt-2 text-[11px] text-foreground/80">Pitch: {fit?.reason ?? 'Use best available room and protect price objection.'}</div>
+                <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+                  <span>Confirm arrival</span><span>Show best room</span><span>Handle objection</span><span>Mark outcome</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Daily target */}

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { sendTourMessage, logTourEvent } from '@/myt/lib/tour-messages';
 import { useLocation } from '@/shims/react-router-dom';
 import { useIdentityStore } from '@/lib/lead-identity/store';
+import type { InventoryFit } from '@/myt/lib/inventory-intelligence';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 const in7days = () => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; };
@@ -72,7 +73,8 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
   }, [role, currentTcmName, form.assignedTo]);
 
   useEffect(() => {
-    const stateLead = (location.state as { lead?: Record<string, unknown> } | null)?.lead;
+    const routeState = location.state as { lead?: Record<string, unknown>; inventoryFit?: InventoryFit } | null;
+    const stateLead = routeState?.lead;
     if (!stateLead) return;
     const leadName = String(stateLead.name ?? '');
     const phone = String(stateLead.phone ?? stateLead.phoneRaw ?? stateLead.phoneE164 ?? '');
@@ -92,6 +94,9 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
       occupation: type || f.occupation,
       roomType: room.includes('private') ? 'Single' : room.includes('shared') ? 'Double Sharing' : f.roomType,
       keyConcern: notes || f.keyConcern,
+      zoneId: routeState?.inventoryFit?.zoneId || f.zoneId,
+      propertyName: routeState?.inventoryFit?.propertyName || f.propertyName,
+      assignedTo: routeState?.inventoryFit ? '' : f.assignedTo,
     }));
   }, [location.state]);
 
@@ -222,6 +227,18 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
           {reason.length > 0 && <p className="text-[10px] mt-1.5 leading-snug opacity-80">{reason.join(' · ')}</p>}
         </div>
       </div>
+
+      {(location.state as { inventoryFit?: InventoryFit } | null)?.inventoryFit && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Inventory pre-match</div>
+            <div className="text-sm font-semibold text-foreground">
+              {(location.state as { inventoryFit?: InventoryFit }).inventoryFit?.propertyName} · {(location.state as { inventoryFit?: InventoryFit }).inventoryFit?.availableBeds} beds live
+            </div>
+          </div>
+          <div className="text-[11px] text-muted-foreground">{(location.state as { inventoryFit?: InventoryFit }).inventoryFit?.reason}</div>
+        </div>
+      )}
 
       {/* Stepper */}
       <div className="flex gap-1.5">
