@@ -31,7 +31,7 @@ function AddLeadPage() {
           </div>
         </header>
 
-        <Tabs defaultValue="single" className="space-y-4">
+        <Tabs defaultValue="paste" className="space-y-4">
           <TabsList>
               <TabsTrigger value="paste">Paste-to-add</TabsTrigger>
             <TabsTrigger value="single">Single lead</TabsTrigger>
