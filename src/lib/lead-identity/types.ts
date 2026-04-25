@@ -106,6 +106,10 @@ export interface ParsedLeadDraft {
   phone: string;
   email: string;
   location: string;
+  /** Distinct area tokens detected in the location/address text (e.g. ["HSR Layout","BTM"]). */
+  areas: string[];
+  /** Full address / map link / long-form location string when present. */
+  fullAddress: string;
   budget: string;        // raw budget text
   moveIn: string;        // raw move-in text
   type: string;
