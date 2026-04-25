@@ -66,4 +66,15 @@ export const api = {
     },
     get: (id: string) => request<unknown>(`/api/leads/${id}`),
   },
+
+  todos: {
+    list: <T = import("@/contracts").Todo>(q: Record<string, string> = {}) => {
+      const qs = new URLSearchParams(q).toString();
+      return request<{ items: T[] }>(`/api/todos${qs ? `?${qs}` : ""}`);
+    },
+  },
+
+  users: {
+    list: () => request<{ items: { _id: string; name: string; email: string; role: string }[] }>("/api/users"),
+  },
 };
