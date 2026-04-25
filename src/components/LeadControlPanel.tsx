@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -25,6 +26,7 @@ import {
   Phone, MessageSquare, Calendar as CalendarIcon, Tag, ClipboardCheck,
   AlertTriangle, CheckCircle2, X, Activity as ActivityIcon, MapPin,
   Wallet, Send, Zap, IndianRupee, BellRing, ExternalLink, Plus,
+  Building2, Video, Briefcase,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Lead, LeadStage, FollowUpPriority, SequenceKind } from "@/lib/types";
@@ -35,6 +37,14 @@ import { useSettings } from "@/myt/lib/settings-context";
 
 const TAG_OPTIONS = ["price-issue", "location-mismatch", "parents-involved", "urgent", "budget-low"];
 const OBJECTIONS = ["Budget", "Location", "Amenities", "Timing", "Parents", "Comparing options", "Other"];
+const ROOM_TYPES = ["Single", "Double Sharing", "Triple Sharing", "Studio"];
+const BOOKING_SOURCES = ["ad", "referral", "organic", "whatsapp", "call", "walk-in"];
+const DECISION_MAKERS = ["self", "parent", "group"];
+const TOUR_TYPES = [
+  { value: "physical", label: "Physical", icon: Building2 },
+  { value: "virtual", label: "Virtual", icon: Video },
+  { value: "pre-book-pitch", label: "Pre-book", icon: Briefcase },
+];
 const TEMPLATES = [
   { id: "tour-confirm", label: "Tour confirmation", body: "Hi! Confirming your tour today. Looking forward to meeting you." },
   { id: "post-tour", label: "Post-tour check-in", body: "Hi! How did you find the property? Happy to answer any questions." },
