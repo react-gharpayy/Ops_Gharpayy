@@ -25,6 +25,7 @@ import { usePipRouteSync } from "./pip/usePipSync";
 import { activePersona } from "@/lib/personas";
 import { VpsConnectionStatus } from "./VpsConnectionStatus";
 import { ClientOnly } from "./ClientOnly";
+import { QuickCreateMenu } from "./QuickCreateMenu";
 
 function PipRouteSyncBridge() {
   const { active } = usePip();
@@ -284,6 +285,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">
+            <ClientOnly><QuickCreateMenu /></ClientOnly>
             <ClientOnly><VpsConnectionStatus /></ClientOnly>
             <PipButton mode="capture" label="PiP Add" className="hidden sm:inline-flex" />
             <PipButton mode="manage" label="PiP Manage" className="hidden sm:inline-flex" />
