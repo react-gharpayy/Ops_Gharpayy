@@ -92,10 +92,15 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
         actor: user.sub, tenantId: user.tenantId, correlationId, causationId: null, version: 1,
         payload: { lead },
       });
+      await autoLogActivity({
+        entityType: "lead", entityId: lead._id, kind: "created",
+        subject: `Lead created · ${lead.name}`,
+        body: `Source: ${lead.source} · Budget: ₹${lead.budget?.toLocaleString()} · Area: ${lead.preferredArea}`,
+        meta: { source: lead.source, intent: lead.intent },
+        user, correlationId,
+      });
       return { ok: true, eventIds: [evtId] };
     }
-
-    case "cmd.lead.update": {
       const p = UpdateLeadCmd.parse(cmd).payload;
       const patch = { ...p.patch, updatedAt: now };
       const r = await col(LEADS).updateOne({ _id: p.leadId, tenantId: user.tenantId }, { $set: patch });
@@ -106,6 +111,16 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
         actor: user.sub, tenantId: user.tenantId, correlationId, causationId: null, version: 1,
         payload: { leadId: p.leadId, patch },
       });
+      const changedKeys = Object.keys(p.patch).filter((k) => k !== "updatedAt");
+      if (changedKeys.length > 0) {
+        await autoLogActivity({
+          entityType: "lead", entityId: p.leadId, kind: "field_changed",
+          subject: `Updated: ${changedKeys.join(", ")}`,
+          body: changedKeys.map((k) => `${k}: ${JSON.stringify((p.patch as Record<string, unknown>)[k])}`).join(" · "),
+          meta: { changedKeys, patch: p.patch },
+          user, correlationId,
+        });
+      }
       return { ok: true, eventIds: [evtId] };
     }
 
@@ -122,6 +137,13 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
         actor: user.sub, tenantId: user.tenantId, correlationId, causationId: null, version: 1,
         payload: { leadId: p.leadId, tcmId: p.tcmId },
       });
+      await autoLogActivity({
+        entityType: "lead", entityId: p.leadId, kind: "assigned",
+        subject: `Assigned to TCM`,
+        body: `Now owned by ${p.tcmId}`,
+        meta: { tcmId: p.tcmId },
+        user, correlationId,
+      });
       return { ok: true, eventIds: [evtId] };
     }
 
@@ -135,6 +157,12 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
         _id: evtId, type: "evt.lead.stage_changed", occurredAt: now,
         actor: user.sub, tenantId: user.tenantId, correlationId, causationId: null, version: 1,
         payload: { leadId: p.leadId, from: before.stage, to: p.to },
+      });
+      await autoLogActivity({
+        entityType: "lead", entityId: p.leadId, kind: "stage_changed",
+        subject: `Stage: ${before.stage} → ${p.to}`,
+        meta: { from: before.stage, to: p.to },
+        user, correlationId,
       });
       return { ok: true, eventIds: [evtId] };
     }
