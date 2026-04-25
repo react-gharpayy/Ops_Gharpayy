@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -25,6 +26,7 @@ import {
   Phone, MessageSquare, Calendar as CalendarIcon, Tag, ClipboardCheck,
   AlertTriangle, CheckCircle2, X, Activity as ActivityIcon, MapPin,
   Wallet, Send, Zap, IndianRupee, BellRing, ExternalLink, Plus,
+  Building2, Video, Briefcase,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Lead, LeadStage, FollowUpPriority, SequenceKind } from "@/lib/types";
@@ -35,11 +37,36 @@ import { useSettings } from "@/myt/lib/settings-context";
 
 const TAG_OPTIONS = ["price-issue", "location-mismatch", "parents-involved", "urgent", "budget-low"];
 const OBJECTIONS = ["Budget", "Location", "Amenities", "Timing", "Parents", "Comparing options", "Other"];
+const ROOM_TYPES = ["Single", "Double Sharing", "Triple Sharing", "Studio"];
+const BOOKING_SOURCES = ["ad", "referral", "organic", "whatsapp", "call", "walk-in"];
+const DECISION_MAKERS = ["self", "parent", "group"];
+const TOUR_TYPES = [
+  { value: "physical", label: "Physical", icon: Building2 },
+  { value: "virtual", label: "Virtual", icon: Video },
+  { value: "pre-book-pitch", label: "Pre-book", icon: Briefcase },
+];
 const TEMPLATES = [
   { id: "tour-confirm", label: "Tour confirmation", body: "Hi! Confirming your tour today. Looking forward to meeting you." },
   { id: "post-tour", label: "Post-tour check-in", body: "Hi! How did you find the property? Happy to answer any questions." },
   { id: "scarcity", label: "Scarcity", body: "Just a heads-up — only a couple of beds left at this price." },
 ];
+
+type DrawerScheduleAnswers = {
+  bookingSource: string;
+  decisionMaker: string;
+  moveInDate: string;
+  budget: string;
+  occupation: string;
+  workLocation: string;
+  roomType: string;
+  readyIn48h: boolean;
+  exploring: boolean;
+  comparing: boolean;
+  needsFamily: boolean;
+  willBookToday: string;
+  keyConcern: string;
+  tourType: string;
+};
 
 export function LeadControlPanel() {
   const {
@@ -72,6 +99,22 @@ export function LeadControlPanel() {
   const [tcmId, setTcmId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [isSchedulingAnother, setIsSchedulingAnother] = useState(false);
+  const [scheduleAnswers, setScheduleAnswers] = useState({
+    bookingSource: "whatsapp",
+    decisionMaker: "self",
+    moveInDate: "",
+    budget: "",
+    occupation: "",
+    workLocation: "",
+    roomType: "Single",
+    readyIn48h: false,
+    exploring: false,
+    comparing: false,
+    needsFamily: false,
+    willBookToday: "maybe",
+    keyConcern: "",
+    tourType: "physical",
+  });
   const [tab, setTab] = useState("control");
   const [, mounted] = useMountedNow();
 
@@ -89,6 +132,13 @@ export function LeadControlPanel() {
     setPropertyId(upcomingTour?.propertyId ?? "");
     setTcmId(upcomingTour?.tcmId ?? lead.assignedTcmId ?? "");
     setScheduledAt(upcomingTour ? toLocal(upcomingTour.scheduledAt) : "");
+    setScheduleAnswers((answers) => ({
+      ...answers,
+      budget: String(lead.budget || ""),
+      moveInDate: lead.moveInDate || "",
+      workLocation: lead.preferredArea || "",
+      keyConcern: lead.tags.join(", "),
+    }));
     setIsSchedulingAnother(false);
     setTab(pendingPostTour ? "post" : upcomingTour ? "tour" : settings.matching.drawerDefaultTab);
   }, [lead, pendingPostTour, upcomingTour, settings.matching.drawerDefaultTab]);
@@ -418,6 +468,8 @@ export function LeadControlPanel() {
                   propertyId={propertyId}
                   tcmId={tcmId}
                   scheduledAt={scheduledAt}
+                  answers={scheduleAnswers}
+                  onAnswersChange={(patch: Partial<DrawerScheduleAnswers>) => setScheduleAnswers((answers) => ({ ...answers, ...patch }))}
                   onPropertyChange={setPropertyId}
                   onTcmChange={setTcmId}
                   onScheduledAtChange={setScheduledAt}
@@ -673,6 +725,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
 function Meta({ icon: Icon, label, value }: { icon: typeof CalendarIcon; label: string; value: string }) {
   return (
     <div className="rounded-md bg-muted/60 px-2 py-1.5">
@@ -724,7 +785,7 @@ function UpcomingTourCard({
 }
 
 function InlineScheduleTour({
-  lead, properties, tcms, propertyId, tcmId, scheduledAt,
+  lead, properties, tcms, propertyId, tcmId, scheduledAt, answers, onAnswersChange,
   onPropertyChange, onTcmChange, onScheduledAtChange, onSchedule,
 }: {
   lead: Lead;
@@ -733,6 +794,8 @@ function InlineScheduleTour({
   propertyId: string;
   tcmId: string;
   scheduledAt: string;
+  answers: DrawerScheduleAnswers;
+  onAnswersChange: (patch: Partial<DrawerScheduleAnswers>) => void;
   onPropertyChange: (value: string) => void;
   onTcmChange: (value: string) => void;
   onScheduledAtChange: (value: string) => void;
@@ -746,6 +809,43 @@ function InlineScheduleTour({
           <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Phone</span><span className="font-medium text-foreground">{lead.phone}</span></div>
           <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Budget</span><span className="font-medium text-foreground">₹{(lead.budget / 1000).toFixed(0)}k</span></div>
           <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Area</span><span className="font-medium text-foreground">{lead.preferredArea}</span></div>
+        </div>
+        <div className="rounded-md border border-border bg-background/60 p-2 space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">MYT Schedule questions</div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Field label="Source"><Select value={answers.bookingSource} onValueChange={(v) => onAnswersChange({ bookingSource: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{BOOKING_SOURCES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select></Field>
+            <Field label="Decision maker"><Select value={answers.decisionMaker} onValueChange={(v) => onAnswersChange({ decisionMaker: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{DECISION_MAKERS.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select></Field>
+            <Field label="Move-in"><Input type="date" value={answers.moveInDate} onChange={(e) => onAnswersChange({ moveInDate: e.target.value })} className="h-8 text-xs" /></Field>
+            <Field label="Budget"><Input type="number" value={answers.budget} onChange={(e) => onAnswersChange({ budget: e.target.value })} className="h-8 text-xs" /></Field>
+            <Field label="Work / College"><Input value={answers.occupation} onChange={(e) => onAnswersChange({ occupation: e.target.value })} className="h-8 text-xs" /></Field>
+            <Field label="Work location"><Input value={answers.workLocation} onChange={(e) => onAnswersChange({ workLocation: e.target.value })} className="h-8 text-xs" /></Field>
+          </div>
+          <Field label="Room type"><Select value={answers.roomType} onValueChange={(v) => onAnswersChange({ roomType: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{ROOM_TYPES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></Field>
+          <div className="grid gap-1.5">
+            {([
+              ["readyIn48h", "Ready to finalize within 48 hours"],
+              ["exploring", "Only exploring"],
+              ["comparing", "Comparing options"],
+              ["needsFamily", "Needs family approval"],
+            ] as const).map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 rounded-md border border-border bg-surface-2/40 px-2 py-1.5 text-xs">
+                <Checkbox checked={answers[key]} onCheckedChange={(v) => onAnswersChange({ [key]: v === true })} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <Field label="Will book today"><Select value={answers.willBookToday} onValueChange={(v) => onAnswersChange({ willBookToday: v })}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{["yes", "maybe", "no"].map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent></Select></Field>
+          <Field label="Key concern"><Input value={answers.keyConcern} onChange={(e) => onAnswersChange({ keyConcern: e.target.value })} className="h-8 text-xs" /></Field>
+        </div>
+        <div>
+          <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Tour Type</Label>
+          <div className="mt-1 grid grid-cols-3 gap-2">
+            {TOUR_TYPES.map(({ value, label, icon: Icon }) => (
+              <button key={value} type="button" onClick={() => onAnswersChange({ tourType: value })} className={`h-12 rounded-md border text-xs flex flex-col items-center justify-center gap-1 ${answers.tourType === value ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface-2 text-muted-foreground"}`}>
+                <Icon className="h-3.5 w-3.5" />{label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
