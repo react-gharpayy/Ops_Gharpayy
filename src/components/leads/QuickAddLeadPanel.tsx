@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "@/shims/react-router-dom";
 import { useAppState } from "@/myt/lib/app-context";
 import { bestInventoryFits, detectAreaZone, recommendedFlowOps, recommendedTcm } from "@/myt/lib/inventory-intelligence";
+import type { ParsedLeadDraft } from "@/lib/lead-identity/types";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -63,6 +64,14 @@ const BLR_OPTS = [
   { v: null, label: "❓ Unknown" },
 ];
 
+const parseBudgetAmount = (value: string | number | undefined) => {
+  const raw = String(value ?? "").toLowerCase().replace(/,/g, " ");
+  const matches = [...raw.matchAll(/(\d+(?:\.\d+)?)\s*(k|000)?/g)]
+    .map((m) => Math.round(Number(m[1]) * (m[2] === "k" ? 1000 : m[2] === "000" ? 1000 : Number(m[1]) <= 80 ? 1000 : 1)))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return matches.length ? Math.max(...matches) : 0;
+};
+
 export function QuickAddLeadPanel({ open, onClose }: Props) {
   const checkDup = useIdentityStore((s) => s.checkDuplicates);
   const create = useIdentityStore((s) => s.createLead);
@@ -88,6 +97,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
   const [assigneeId, setAssigneeId] = useState<string>("");
   const [stage, setStage] = useState<string>(STAGES[0]);
   const [notes, setNotes] = useState("");
+  const [lastParsed, setLastParsed] = useState<ParsedLeadDraft | null>(null);
 
   const nameRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (open) setTimeout(() => nameRef.current?.focus(), 50); }, [open]);
@@ -99,7 +109,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
   const areaFit = useMemo(() => {
     const areaText = `${areasText} ${fullAddress}`.trim();
     if (!areaText) return null;
-    const budgetNum = Number((budget.match(/\d+/g) ?? []).join('').slice(0, 6)) || 0;
+    const budgetNum = parseBudgetAmount(budget);
     const zone = detectAreaZone(areaText);
     const fits = bestInventoryFits({ areaText, budget: budgetNum, room, rooms, blocks, limit: 3 });
     return { zone, fits, flowOps: recommendedFlowOps(zone.id), tcm: recommendedTcm(tours, zone.id) };
@@ -112,12 +122,33 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     setType(""); setRoom(""); setNeed(""); setSpecialReqs("");
     setInBLR(null); setQuality(null); setZoneBucket("");
     setAssigneeId(""); setStage(STAGES[0]); setNotes("");
+    setLastParsed(null);
     setTimeout(() => nameRef.current?.focus(), 30);
   };
 
+  const buildScheduleLead = (source?: ParsedLeadDraft | null) => ({
+    name: source?.name || name,
+    phone: source?.phone || phone,
+    email: source?.email || email,
+    location: source?.location || areasText,
+    area: source?.areas?.length ? source.areas.join(", ") : source?.location || areasText,
+    areas: source?.areas?.length ? source.areas : areasText.split(",").map((a) => a.trim()).filter(Boolean),
+    fullAddress: source?.fullAddress || fullAddress,
+    budget: source?.budget || budget,
+    moveInDate: source?.moveIn || moveIn,
+    room: source?.room || room,
+    type: source?.type || type,
+    need: source?.need || need,
+    specialReqs: source?.specialReqs || specialReqs,
+    extraContent: source?.extraContent || notes || specialReqs,
+    links: source?.links ?? (fullAddress.match(/https?:\/\/\S+/g) ?? []),
+    geoIntel: source?.geoIntel,
+    rawSource: source?.rawSource,
+  });
+
   const scheduleExisting = (lead: ReturnType<typeof checkDup>["candidates"][number]["lead"]) => {
     onClose();
-    navigate("/myt/schedule", { state: { lead, inventoryFit: areaFit?.fits[0] } });
+    navigate("/myt/schedule", { state: { lead, pastedLead: buildScheduleLead(lastParsed), inventoryFit: areaFit?.fits[0] } });
     toast.info(`Scheduling tour for ${lead.name}`);
   };
 
@@ -126,7 +157,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     onClose();
     navigate("/myt/schedule", {
       state: {
-        lead: { name, phone, email, location: areasText, area: areasText, fullAddress, budget, moveInDate: moveIn, room, type, extraContent: notes || specialReqs },
+        lead: buildScheduleLead(lastParsed),
         inventoryFit: areaFit?.fits[0],
       },
     });
