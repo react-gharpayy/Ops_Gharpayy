@@ -9,12 +9,18 @@ import { Button } from '@/components/ui/button';
 import { LeadControlPanel } from '@/myt/components/LeadControlPanel';
 import { GlueFeed } from '@/components/GlueFeed';
 import { CoachInline } from '@/components/CoachInline';
+import { buildAreaOperatingRows, bestInventoryFits, detectAreaZone, recommendedTcm } from '@/myt/lib/inventory-intelligence';
+import { zones } from '@/myt/lib/mock-data';
 
 const CYCLE_TARGETS = { chatsClosed: 30, mytLeads: 10, toursScheduled: 4, sameDayConfirmed: 2 };
 
 export default function FlowOpsDashboard() {
-  const { tours, currentMemberId } = useAppState();
+  const { tours, leads, rooms, blocks, bookings, currentMemberId } = useAppState();
   const navigate = useNavigate();
+  const myZone = currentMemberId ? zones.find((z) => z.id === detectAreaZone(zones.find((zone) => zone.id === currentMemberId)?.area ?? '').id) : zones[0];
+  const operatingRows = buildAreaOperatingRows({ leads, tours, rooms, blocks, bookings });
+  const ownedRow = operatingRows.find((r) => r.zoneId === myZone?.id) ?? operatingRows[0];
+  const areaLeads = leads.filter((l) => detectAreaZone(l.area).id === ownedRow.zoneId).slice(0, 5);
   const myTours = currentMemberId
     ? tours.filter(t => t.scheduledBy === currentMemberId)
     : tours.filter(t => t.scheduledBy === 'm1');
@@ -62,6 +68,31 @@ export default function FlowOpsDashboard() {
         <MetricCard label="Pending" value={pending} color="amber" icon={<Phone className="h-4 w-4" />} />
         <MetricCard label="Show-Ups" value={showUps} color="green" icon={<TrendingUp className="h-4 w-4" />} />
         <MetricCard label="Drafts" value={drafts} color="amber" icon={<FileText className="h-4 w-4" />} />
+      </div>
+
+      <div className="glass-card p-3 md:p-5 space-y-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="font-heading font-semibold text-sm text-foreground">My Area Goal · {ownedRow.area}</h3>
+            <p className="text-xs text-muted-foreground">{ownedRow.nextAction}</p>
+          </div>
+          <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] text-primary">{ownedRow.availableBeds} beds · {ownedRow.toursToday} Tours today</span>
+        </div>
+        <div className="grid gap-2 md:grid-cols-2">
+          {areaLeads.map((lead) => {
+            const fit = bestInventoryFits({ areaText: lead.area, budget: lead.budget, rooms, blocks, limit: 1 })[0];
+            const tcm = fit ? recommendedTcm(tours, fit.zoneId) : null;
+            return (
+              <div key={lead.id} className="rounded-lg border border-border bg-surface-2/40 p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{lead.name} · ₹{lead.budget.toLocaleString()}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{fit?.propertyName ?? 'No live fit'} · TCM {tcm?.name ?? 'Auto'}</div>
+                </div>
+                <Button size="sm" className="h-8 text-xs shrink-0" onClick={() => navigate('/myt/schedule', { state: { lead, inventoryFit: fit } })}>Schedule Tour</Button>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Cycle Tracker */}
