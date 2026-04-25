@@ -48,6 +48,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       bookings, setBookings,
       rooms, setRooms,
       blocks, setBlocks,
+      managedProperties, setManagedProperties,
+      managedRooms, setManagedRooms,
       currentRole, setCurrentRole,
       currentMemberId, setCurrentMemberId,
       globalZoneFilter, setGlobalZoneFilter,
