@@ -4,10 +4,15 @@ import { useApp } from "@/lib/store";
 import { ConfidenceBar, IntentChip, StageBadge } from "@/components/atoms";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import type { LeadStage } from "@/lib/types";
 import { useMountedNow } from "@/hooks/use-now";
+import { LeadPasteParser } from "@/components/leads/LeadPasteParser";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/leads")({
   head: () => ({
@@ -17,11 +22,12 @@ export const Route = createFileRoute("/leads")({
 });
 
 function LeadsPage() {
-  const { leads, tcms, selectLead } = useApp();
+  const { leads, tcms, selectLead, addLead } = useApp();
   const [, mounted] = useMountedNow();
   const [q, setQ] = useState("");
   const [stage, setStage] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"confidence" | "moveIn" | "updated">("confidence");
+  const [pasteOpen, setPasteOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const list = leads.filter((l) => {
@@ -46,6 +52,38 @@ function LeadsPage() {
             <p className="text-sm text-muted-foreground">{filtered.length} of {leads.length} · ranked by deal probability</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Dialog open={pasteOpen} onOpenChange={setPasteOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1.5 h-9"><Wand2 className="h-3.5 w-3.5" /> Paste lead</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>Paste a lead — auto-extract fields</DialogTitle></DialogHeader>
+                <LeadPasteParser onSubmit={async (payload) => {
+                  const now = new Date().toISOString();
+                  addLead({
+                    id: `lead-${Date.now()}`,
+                    name: payload.name,
+                    phone: payload.phone,
+                    source: payload.source ?? "paste",
+                    budget: payload.budget,
+                    moveInDate: payload.moveInDate,
+                    preferredArea: payload.preferredArea,
+                    assignedTcmId: tcms[0]?.id ?? "",
+                    stage: "new",
+                    intent: payload.intent ?? "warm",
+                    confidence: 50,
+                    tags: payload.tags ?? [],
+                    nextFollowUpAt: null,
+                    responseSpeedMins: 0,
+                    createdAt: now,
+                    updatedAt: now,
+                  });
+                  toast.success(`Lead added: ${payload.name}`);
+                  setPasteOpen(false);
+                  return { ok: true, eventIds: [] };
+                }} />
+              </DialogContent>
+            </Dialog>
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or phone…" className="h-9 w-56 text-sm" />
             <Select value={stage} onValueChange={setStage}>
               <SelectTrigger className="h-9 w-44 text-sm"><SelectValue /></SelectTrigger>

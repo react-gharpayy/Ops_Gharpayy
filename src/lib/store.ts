@@ -31,6 +31,7 @@ interface AppState {
   sequences: ActiveSequence[];
   bookings: Booking[];
 
+  addLead: (lead: Lead) => void;
   setLeadStage: (leadId: string, stage: LeadStage) => void;
   setLeadIntent: (leadId: string, intent: Intent) => void;
   setLeadFollowUp: (leadId: string, dueAt: string, priority: FollowUp["priority"], reason?: string) => void;
@@ -83,6 +84,8 @@ export const useApp = create<AppState>((set, get) => ({
   handoffs: HANDOFFS,
   sequences: SEQUENCES_INIT,
   bookings: [],
+
+  addLead: (lead) => set((s) => ({ leads: [lead, ...s.leads] })),
 
   setLeadStage: (leadId, stage) => {
     set((s) => ({
