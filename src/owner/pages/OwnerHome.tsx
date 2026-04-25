@@ -14,6 +14,7 @@ import { OBJECTION_LABELS } from '@/owner/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { CoachInline } from '@/components/CoachInline';
+import { useApp } from '@/lib/store';
 
 export function OwnerHome() {
   const {
@@ -35,6 +36,18 @@ export function OwnerHome() {
   const myObjections = objections.filter((o) => o.ownerId === owner.id);
   const [, mounted] = useMountedNow(60_000);
   const tier = ownerTier(compliance.score);
+  const appLeads = useApp((s) => s.leads);
+  const appTours = useApp((s) => s.tours);
+  const ownerAreaText = myProps.map((p) => `${p.name} ${p.area}`).join(" ").toLowerCase();
+  const matchingLeads = appLeads.filter((l) => ownerAreaText.includes((l.preferredArea || "").toLowerCase()) || ownerAreaText.includes((l.tags?.[0] || "").toLowerCase()));
+  const activeVisits = appTours.filter((t) => myProps.some((p) => p.id === t.propertyId) && t.status === "scheduled");
+  const hotDemand = matchingLeads.filter((l) => l.intent === "hot").length;
+  const ownerActions = [
+    pendingBlocks.length ? `${pendingBlocks.length} block approval${pendingBlocks.length > 1 ? "s" : ""} waiting` : null,
+    locked ? `${locked} locked room${locked > 1 ? "s" : ""} need verification` : null,
+    compliance.mediaFreshRooms < compliance.totalRooms ? `${compliance.totalRooms - compliance.mediaFreshRooms} room photo set${compliance.totalRooms - compliance.mediaFreshRooms > 1 ? "s" : ""} stale` : null,
+    activeVisits.length ? `${activeVisits.length} visit${activeVisits.length > 1 ? "s" : ""} scheduled by TCM` : null,
+  ].filter(Boolean) as string[];
 
   // Revenue lens
   const revenue = useMemo(() => {
@@ -77,8 +90,8 @@ export function OwnerHome() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* OWNER SWITCHER — for demoing comparison across our 4 owners */}
-      <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+      {/* OWNER SWITCHER — compact identity control */}
+      <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 opacity-80">
         {owners.map((o) => {
           const active = o.id === owner.id;
           return (
@@ -180,12 +193,34 @@ export function OwnerHome() {
         </div>
       </section>
 
+      {/* OPERATING ALIGNMENT — Flow Ops + TCM signal */}
+      <section className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Flow Ops + TCM need from you</div>
+            <h2 className="font-display text-lg font-semibold">Keep sellable supply clean.</h2>
+          </div>
+          <div className="flex gap-2 text-[10px] flex-wrap">
+            <span className="rounded-full bg-success/10 text-success px-2 py-1">{hotDemand} hot leads nearby</span>
+            <span className="rounded-full bg-info/10 text-info px-2 py-1">{activeVisits.length} scheduled visits</span>
+          </div>
+        </div>
+        <div className="grid gap-2 md:grid-cols-2">
+          {(ownerActions.length ? ownerActions : ['No blockers. Your rooms are usable by the team.']).map((a, i) => (
+            <div key={i} className="rounded-lg border border-border bg-background/50 px-3 py-2 text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-accent" />
+              <span>{a}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* QUICK STATS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={CheckCircle2} label="Sellable" value={sellable} sub="Live to team" tone="success" />
         <StatCard icon={Sparkles} label="Dedicated" value={dedicated} sub="Auto-bookable" tone="info" />
         <StatCard icon={Lock} label="Locked" value={locked} sub="Need confirm" tone="danger" />
-        <StatCard icon={Clock} label="Pending" value={pendingBlocks.length} sub="Block requests" tone="warning" />
+        <StatCard icon={Clock} label="Pending" value={pendingBlocks.length} sub="Owner approvals" tone="warning" />
       </div>
 
       {/* PENDING BLOCKS — top priority, inline */}
@@ -257,6 +292,16 @@ export function OwnerHome() {
           <RevTile label="Avg rent" value={`₹${revenue.avgRent.toLocaleString()}`} />
           <RevTile label="Vacant rooms" value={revenue.vacant} tone="warning" />
           <RevTile label="Monthly revenue" value={`₹${revenue.monthly.toLocaleString()}`} tone="success" />
+        </div>
+      </section>
+
+      {/* OWNER ACTION QUEUE */}
+      <section className="space-y-3">
+        <SectionHeader icon={Activity} title="Owner action queue" subtitle="Specific actions that unblock Flow Ops and TCM" />
+        <div className="grid md:grid-cols-3 gap-3">
+          <ChecklistTile to="/owner/blocks" icon={Inbox} label="Approve / reject holds" subtitle={pendingBlocks.length ? `${pendingBlocks.length} waiting now` : 'No pending holds'} accent={pendingBlocks.length ? 'warning' : 'success'} />
+          <ChecklistTile to="/owner/rooms" icon={Building2} label="Verify room truth" subtitle={locked ? `${locked} locked` : `${sellable} sellable`} accent={locked ? 'destructive' : 'success'} />
+          <ChecklistTile to="/owner/visits" icon={Camera} label="Review TCM activity" subtitle={`${activeVisits.length} upcoming visits`} accent="default" />
         </div>
       </section>
 
