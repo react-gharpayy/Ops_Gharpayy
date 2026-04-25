@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Tour, Role, Lead, Booking, Room, RoomBlock } from './types';
+import { Tour, Role, Lead, Booking, Room, RoomBlock, Property } from './types';
 import { tours as initialTours, initialLeads, initialBookings } from './mock-data';
 import { rooms as initialRooms, initialBlocks } from './properties-seed';
 
@@ -14,6 +14,11 @@ interface AppState {
   setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
   blocks: RoomBlock[];
   setBlocks: React.Dispatch<React.SetStateAction<RoomBlock[]>>;
+  // User-managed properties for the Property Command Center (no seed data).
+  managedProperties: Property[];
+  setManagedProperties: React.Dispatch<React.SetStateAction<Property[]>>;
+  managedRooms: Room[];
+  setManagedRooms: React.Dispatch<React.SetStateAction<Room[]>>;
   currentRole: Role;
   setCurrentRole: (role: Role) => void;
   currentMemberId: string | null;
