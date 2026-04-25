@@ -89,7 +89,7 @@ export default function MYTLeadTracker() {
           <Button
             size="sm"
             variant={pipActive ? "secondary" : "default"}
-            onClick={() => (pipActive ? closePip() : openPip())}
+            onClick={() => (pipActive ? closePip() : openPip("dashboard"))}
             disabled={!pipSupported && !pipActive}
             className="h-8 text-xs gap-1.5"
             title={pipSupported ? "Pop dashboard out as a floating window over WhatsApp" : "Document Picture-in-Picture not supported in this browser"}
@@ -100,12 +100,22 @@ export default function MYTLeadTracker() {
           <Button
             size="sm"
             variant="default"
-            onClick={async () => { if (!pipActive && pipSupported) await openPip(); setShowQuickAdd(true); }}
+            onClick={async () => { if (pipSupported) await openPip("capture"); else setShowQuickAdd(true); }}
             disabled={!pipSupported && !pipActive}
             className="h-8 text-xs gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90"
             title="Open PiP and immediately start adding a lead inside the floating window"
           >
-            <PictureInPicture2 className="h-3.5 w-3.5" /> PiP + Add Lead
+            <PictureInPicture2 className="h-3.5 w-3.5" /> PiP Add Lead
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openPip("manage")}
+            disabled={!pipSupported}
+            className="h-8 text-xs gap-1.5"
+            title="Open compact lead management PiP for new, old, future, and past leads"
+          >
+            <PictureInPicture2 className="h-3.5 w-3.5" /> PiP Manage
           </Button>
           <Button size="sm" variant="outline" onClick={() => setShowQuickAdd(true)} className="h-8 text-xs gap-1.5">
             <Zap className="h-3.5 w-3.5" /> Quick Add

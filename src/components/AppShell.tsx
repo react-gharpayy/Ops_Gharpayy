@@ -22,6 +22,7 @@ import { useEffect, useMemo } from "react";
 import { PictureInPictureProvider, PipMount, usePip } from "./pip/PipProvider";
 import { PipButton } from "./pip/PipButton";
 import { usePipRouteSync } from "./pip/usePipSync";
+import { activePersona } from "@/lib/personas";
 
 function PipRouteSyncBridge() {
   const { active } = usePip();
@@ -30,6 +31,37 @@ function PipRouteSyncBridge() {
 }
 
 type NavItem = { to: string; label: string; icon: typeof Target; badge?: number; accent?: boolean };
+
+function PersonaPulse({ role, persona, queueCount, overdueCount, bookingsCount }: {
+  role: string;
+  persona: ReturnType<typeof activePersona>;
+  queueCount: number;
+  overdueCount: number;
+  bookingsCount: number;
+}) {
+  const roleCopy = role === "hr"
+    ? `People watch: ${persona.arc}`
+    : role === "flow-ops"
+      ? `Flow control: ${queueCount} actions waiting · ${persona.signature}`
+      : role === "tcm"
+        ? `Next best action: ${persona.weakSpots[0] ? `protect against ${persona.weakSpots[0]}` : persona.signature}`
+        : `Owner control: approve what is blocking sellable inventory.`;
+  const metric = role === "hr" ? `${bookingsCount} bookings` : role === "tcm" ? `${overdueCount} overdue` : `${queueCount} live tasks`;
+  return (
+    <div className="border-b border-border bg-card/35 px-4 md:px-6 py-2">
+      <div className="mx-auto max-w-[1400px] flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="min-w-0">
+          <span className="font-medium text-foreground">{persona.name.split(" ")[0]}</span>
+          <span className="text-muted-foreground"> · {roleCopy}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground">{persona.focus}</span>
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{metric}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { role, setRole, currentTcmId, setCurrentTcmId, tcms, leads, tours, followUps, handoffs, bookings } = useApp();
@@ -78,90 +110,46 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const navByRole: Record<typeof role, NavItem[]> = {
     hr: [
-      { to: "/coach", label: "Coach", icon: Sparkles, accent: true },
       { to: "/today", label: "Today", icon: Sun, badge: queue.length },
-      { to: "/calendar", label: "Calendar", icon: Calendar },
-      { to: "/myt", label: "HR Tower", icon: Home },
-      { to: "/myt/war-room", label: "War Room", icon: Swords },
-      { to: "/myt/funnel", label: "Funnel", icon: Activity },
+      { to: "/myt/war-room", label: "War Room", icon: Swords, accent: true },
       { to: "/myt/team", label: "Team", icon: Users },
+      { to: "/revenue", label: "Revenue", icon: IndianRupee },
+      { to: "/myt/funnel", label: "Funnel", icon: Activity },
       { to: "/myt/zones", label: "Zones", icon: MapPin },
       { to: "/myt/owners-compare", label: "Owners", icon: ShieldCheck },
-      { to: "/supply-hub", label: "Supply Hub", icon: Layers, accent: true },
-      { to: "/supply-hub/match", label: "Lead Matcher", icon: Sparkles },
-      { to: "/supply-hub/areas", label: "Area Mood", icon: MapPin },
-      { to: "/myt/leaderboard", label: "Leaderboard", icon: Trophy },
-      { to: "/leaderboard", label: "Closer Board", icon: Trophy },
-      { to: "/revenue", label: "Revenue", icon: IndianRupee },
-      { to: "/myt/bookings", label: "Bookings", icon: ClipboardList },
-      { to: "/activity", label: "Activity", icon: Activity },
-      { to: "/inbox", label: "Inbox", icon: Inbox },
-      { to: "/myt/settings", label: "Settings", icon: Settings },
-      { to: "/manager", label: "Manager Dash", icon: Activity, accent: true },
-      { to: "/queue", label: "Action Queue", icon: Zap, accent: true },
-      { to: "/zone-brain", label: "Zone Brain", icon: MapPin, accent: true },
-      { to: "/health", label: "System Health", icon: HeartPulse },
-      { to: "/help", label: "How to use", icon: HelpCircle },
+      { to: "/supply-hub", label: "Supply Hub", icon: Layers },
     ],
     "flow-ops": [
-      { to: "/coach", label: "Coach", icon: Sparkles, accent: true },
       { to: "/today", label: "Today", icon: Sun, badge: queue.length },
       { to: "/inbox", label: "Inbox", icon: Inbox },
-      { to: "/myt/flow-ops", label: "Flow Ops", icon: LayoutDashboard },
+      { to: "/myt/leads", label: "Leads", icon: Target, accent: true },
+      { to: "/myt/schedule", label: "Schedule", icon: CalendarPlus },
       { to: "/calendar", label: "Calendar", icon: Calendar },
-      { to: "/leads", label: "Leads", icon: Target },
-      { to: "/myt/leads", label: "MYT Leads", icon: Target },
-      { to: "/myt/schedule", label: "Schedule Tour", icon: CalendarPlus },
-      { to: "/myt/properties", label: "Properties", icon: Building2 },
-      { to: "/supply-hub", label: "Supply Hub", icon: Layers, accent: true },
-      { to: "/supply-hub/match", label: "Lead Matcher", icon: Sparkles },
-      { to: "/supply-hub/areas", label: "Area Mood", icon: MapPin },
       { to: "/myt/marketplace", label: "Marketplace", icon: Store },
-      { to: "/myt/mismatch", label: "Mismatches", icon: AlertTriangle, badge: 0 },
-      { to: "/myt/drafts", label: "Drafts", icon: ClipboardList },
-      { to: "/sequences", label: "Sequences", icon: Zap },
-      { to: "/revival", label: "Revival", icon: Sparkles },
-      { to: "/queue", label: "Action Queue", icon: Zap, accent: true },
-      { to: "/zone-brain", label: "Zone Brain", icon: MapPin, accent: true },
-      { to: "/health", label: "System Health", icon: HeartPulse },
-      { to: "/help", label: "How to use", icon: HelpCircle },
+      { to: "/supply-hub", label: "Supply Hub", icon: Layers },
+      { to: "/sequences", label: "Outreach", icon: Zap },
     ],
     tcm: [
-      { to: "/coach", label: "Coach", icon: Sparkles, accent: true },
       { to: "/today", label: "Today", icon: Sun, badge: queue.length },
-      { to: "/myt/tcm", label: "TCM Desk", icon: Target },
-      { to: "/calendar", label: "Calendar", icon: Calendar },
-      { to: "/myt/schedule", label: "Schedule Tour", icon: CalendarPlus },
+      { to: "/myt/tcm", label: "TCM Desk", icon: Target, accent: true },
       { to: "/tours", label: "My Tours", icon: CalendarPlus, badge: incompletePostTour },
-      { to: "/myt/tours", label: "All Tours", icon: CalendarPlus },
       { to: "/follow-ups", label: "Follow-ups", icon: ClipboardList, badge: overdueCount },
+      { to: "/calendar", label: "Calendar", icon: Calendar },
       { to: "/handoffs", label: "Handoffs", icon: MessageSquare, badge: unreadHandoffs },
       { to: "/myt/marketplace", label: "Marketplace", icon: Store },
-      { to: "/supply-hub", label: "Supply Hub", icon: Layers, accent: true },
-      { to: "/supply-hub/match", label: "Lead Matcher", icon: Sparkles },
-      { to: "/supply-hub/areas", label: "Area Mood", icon: MapPin },
-      { to: "/myt/tcm/actions", label: "Actions", icon: Zap },
       { to: "/myt/tcm/performance", label: "My Stats", icon: Activity },
-      { to: "/myt/score", label: "Score", icon: Trophy },
-      { to: "/inbox", label: "Inbox", icon: Inbox },
-      { to: "/queue", label: "Action Queue", icon: Zap, accent: true },
-      { to: "/zone-brain", label: "Zone Brain", icon: MapPin },
-      { to: "/health", label: "System Health", icon: HeartPulse },
-      { to: "/help", label: "How to use", icon: HelpCircle },
     ],
     owner: [
-      { to: "/coach", label: "Coach", icon: Sparkles, accent: true },
-      { to: "/inbox", label: "Inbox", icon: Inbox },
-      { to: "/owner", label: "Owner Home", icon: ShieldCheck },
-      { to: "/owner/inventory", label: "My Inventory", icon: Layers },
-      { to: "/owner/rooms", label: "Update Rooms", icon: Building2 },
-      { to: "/owner/blocks", label: "Block Requests", icon: Inbox },
+      { to: "/owner", label: "Owner Home", icon: ShieldCheck, accent: true },
+      { to: "/owner/blocks", label: "Approvals", icon: Inbox },
+      { to: "/owner/rooms", label: "Rooms", icon: Building2 },
+      { to: "/owner/inventory", label: "Inventory", icon: Layers },
       { to: "/owner/visits", label: "Visits", icon: Camera },
       { to: "/owner/insights", label: "Insights", icon: IndianRupee },
-      { to: "/help", label: "How to use", icon: HelpCircle },
     ],
   };
   const items = navByRole[role];
+  const persona = activePersona(role, role === "tcm" ? currentTcmId : undefined);
 
   const isActive = (to: string) => (to === "/" ? path === "/" : path === to || path.startsWith(to + "/"));
 
@@ -290,11 +278,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             </kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">
+            <PipButton mode="capture" label="PiP Add" className="hidden sm:inline-flex" />
+            <PipButton mode="manage" label="PiP Manage" className="hidden sm:inline-flex" />
             <PipButton />
             <NotificationCenter role={role} />
             <ProfileMenu />
           </div>
         </header>
+
+        <PersonaPulse role={role} persona={persona} queueCount={queue.length} overdueCount={overdueCount} bookingsCount={bookings.length} />
 
         <PipMount>
           <main className="flex-1 w-full max-w-[1400px] mx-auto p-4 pb-24 md:p-6 md:pb-6">{children}</main>
