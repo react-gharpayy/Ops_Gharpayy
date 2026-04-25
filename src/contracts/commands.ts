@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Lead, LeadStage, Intent, Todo, TodoEntityType, TodoPriority } from "./entities";
+import { Lead, LeadStage, Intent, Todo, TodoEntityType, TodoPriority, Activity, ActivityKind, ActivityEntityType, ActivityDirection, ActivityOutcome } from "./entities";
 
 // Command registry — every state-changing intent. Validated client + server.
 export const CommandType = z.enum([
@@ -16,6 +16,10 @@ export const CommandType = z.enum([
   "cmd.todo.decline",
   "cmd.todo.complete",
   "cmd.todo.cancel",
+  // Activities
+  "cmd.activity.log",
+  "cmd.activity.update",
+  "cmd.activity.delete",
 ]);
 export type CommandType = z.infer<typeof CommandType>;
 
@@ -121,6 +125,42 @@ export const CancelTodoCmd = Base.extend({
   payload: z.object({ todoId: z.string() }),
 });
 
+// ---------- Activities ----------
+export const LogActivityCmd = Base.extend({
+  type: z.literal("cmd.activity.log"),
+  payload: Activity.pick({
+    entityType: true, entityId: true, kind: true, subject: true,
+  }).extend({
+    body: z.string().max(5000).optional(),
+    direction: ActivityDirection.optional(),
+    outcome: ActivityOutcome.nullable().optional(),
+    durationSec: z.number().int().min(0).optional(),
+    occurredAt: z.string().optional(),
+    scheduledFor: z.string().nullable().optional(),
+    relatedTodoId: z.string().nullable().optional(),
+    meta: z.record(z.string(), z.unknown()).optional(),
+  }),
+});
+
+export const UpdateActivityCmd = Base.extend({
+  type: z.literal("cmd.activity.update"),
+  payload: z.object({
+    activityId: z.string(),
+    patch: z.object({
+      subject: z.string().min(1).max(200).optional(),
+      body: z.string().max(5000).optional(),
+      outcome: ActivityOutcome.nullable().optional(),
+      durationSec: z.number().int().min(0).optional(),
+      scheduledFor: z.string().nullable().optional(),
+    }),
+  }),
+});
+
+export const DeleteActivityCmd = Base.extend({
+  type: z.literal("cmd.activity.delete"),
+  payload: z.object({ activityId: z.string() }),
+});
+
 export const Command = z.discriminatedUnion("type", [
   CreateLeadCmd,
   UpdateLeadCmd,
@@ -134,5 +174,8 @@ export const Command = z.discriminatedUnion("type", [
   DeclineTodoCmd,
   CompleteTodoCmd,
   CancelTodoCmd,
+  LogActivityCmd,
+  UpdateActivityCmd,
+  DeleteActivityCmd,
 ]);
 export type Command = z.infer<typeof Command>;

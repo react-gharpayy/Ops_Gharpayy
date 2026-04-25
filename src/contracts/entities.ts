@@ -75,3 +75,75 @@ export const Todo = z.object({
   updatedAt: z.string(),
 });
 export type Todo = z.infer<typeof Todo>;
+
+// ------------------- ACTIVITY ENTITY (Salesforce-style timeline) -------------------
+// Every touchpoint with a lead/tour/deal/owner/unit. Drives the activity timeline,
+// conversion analytics, and SLA timers. Some are user-logged (call, email, note,
+// meeting, sms, whatsapp, task), others are auto-logged by the system on commands
+// (created, stage_changed, assigned, field_changed).
+export const ActivityEntityType = z.enum(["lead", "tour", "deal", "owner", "unit"]);
+export type ActivityEntityType = z.infer<typeof ActivityEntityType>;
+
+export const ActivityKind = z.enum([
+  // System-logged
+  "created",
+  "stage_changed",
+  "assigned",
+  "field_changed",
+  "todo_linked",
+  // User-logged
+  "call",
+  "email",
+  "sms",
+  "whatsapp",
+  "meeting",
+  "note",
+  "site_visit",
+  "follow_up",
+  "quote_sent",
+  "document_shared",
+  "payment_recorded",
+]);
+export type ActivityKind = z.infer<typeof ActivityKind>;
+
+export const ActivityDirection = z.enum(["inbound", "outbound", "internal"]);
+export const ActivityOutcome = z.enum([
+  "connected",
+  "no_answer",
+  "busy",
+  "voicemail",
+  "interested",
+  "not_interested",
+  "callback_requested",
+  "scheduled",
+  "completed",
+  "rescheduled",
+  "cancelled",
+  "neutral",
+]);
+
+export const Activity = z.object({
+  _id: z.string(),
+  entityType: ActivityEntityType,
+  entityId: z.string(),
+  kind: ActivityKind,
+  // Standardized "subject" line (Salesforce-style). Human readable, indexable.
+  subject: z.string().min(1).max(200),
+  body: z.string().max(5000).default(""),
+  direction: ActivityDirection.default("internal"),
+  outcome: ActivityOutcome.nullable().default(null),
+  // Engagement metrics
+  durationSec: z.number().int().min(0).default(0),
+  // Time anchors
+  occurredAt: z.string(),                 // when the touchpoint actually happened
+  scheduledFor: z.string().nullable().default(null),
+  // Linkages
+  relatedTodoId: z.string().nullable().default(null),
+  // Free-form structured payload (call recording url, email message-id, etc.)
+  meta: z.record(z.string(), z.unknown()).default({}),
+  // Audit
+  actor: z.string(),                      // userId who logged or triggered it
+  tenantId: z.string(),
+  createdAt: z.string(),
+});
+export type Activity = z.infer<typeof Activity>;

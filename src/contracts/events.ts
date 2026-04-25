@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Lead, Todo } from "./entities";
+import { Lead, Todo, Activity } from "./entities";
 
 // Event registry — every event the system can emit. Server publishes, client + workers subscribe.
 export const EventType = z.enum([
@@ -16,6 +16,10 @@ export const EventType = z.enum([
   "evt.todo.declined",
   "evt.todo.completed",
   "evt.todo.cancelled",
+  // Activities
+  "evt.activity.logged",
+  "evt.activity.updated",
+  "evt.activity.deleted",
   // Future modules — declare now so contracts stay stable.
   "evt.tour.scheduled",
   "evt.tour.completed",
@@ -88,6 +92,20 @@ export const TodoCancelledEvt = Envelope.extend({
   payload: z.object({ todoId: z.string(), by: z.string() }),
 });
 
+// ---------- Activity events ----------
+export const ActivityLoggedEvt = Envelope.extend({
+  type: z.literal("evt.activity.logged"),
+  payload: z.object({ activity: Activity }),
+});
+export const ActivityUpdatedEvt = Envelope.extend({
+  type: z.literal("evt.activity.updated"),
+  payload: z.object({ activityId: z.string(), patch: Activity.partial() }),
+});
+export const ActivityDeletedEvt = Envelope.extend({
+  type: z.literal("evt.activity.deleted"),
+  payload: z.object({ activityId: z.string(), entityType: z.string(), entityId: z.string() }),
+});
+
 export const DomainEvent = z.discriminatedUnion("type", [
   LeadCreatedEvt,
   LeadUpdatedEvt,
@@ -101,5 +119,8 @@ export const DomainEvent = z.discriminatedUnion("type", [
   TodoDeclinedEvt,
   TodoCompletedEvt,
   TodoCancelledEvt,
+  ActivityLoggedEvt,
+  ActivityUpdatedEvt,
+  ActivityDeletedEvt,
 ]);
 export type DomainEvent = z.infer<typeof DomainEvent>;
