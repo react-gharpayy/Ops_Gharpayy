@@ -205,6 +205,7 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
 
   // Normalise escape sequences and CRLF up front
   const normalised = normalisePaste(raw);
+  const links = extractLinks(normalised);
   const clean = normalised
     .replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1")
     .replace(/_{1,3}([^_\n]+)_{1,3}/g, "$1")
@@ -293,9 +294,11 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   }
 
   // ---------- Budget ----------
+  const budgets = extractBudgets(clean);
   let budget = grab(
     /(?:Actual\s*budget|Budget\s*Range|Budget\s*range|Budget\s*is|Budget|Budjet)\s*[:\-–(]*\s*([^\n)📆👨🏢]{2,80})/i,
   ).replace(/[₹()\[\]]/g, "").replace(/\s+/g, " ").trim();
+  if (!budget && budgets.length) budget = budgets.join(", ");
 
   if (!budget) {
     for (const line of clean.split("\n").map((l) => l.trim())) {
@@ -400,12 +403,33 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   const labeledFull = grab(/Full\s*Address\s*[:\-–]+\s*([^\n]{5,300})/i);
   if (labeledFull) fullAddress = labeledFull;
 
+  const consumedValues = [name, phone, email, location, budget, moveIn, type, room, need, specialReqs, fullAddress, ...links, ...budgets]
+    .filter(Boolean)
+    .map((v) => String(v).toLowerCase());
+  const extraContent = cleanJunk(normalised)
+    .split(/\n|\s{2,}/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 2 && !consumedValues.some((v) => v && part.toLowerCase().includes(v)))
+    .join(" · ")
+    .slice(0, 900);
+  const geoIntel = {
+    query: [location, fullAddress, areas.join(", ")].filter(Boolean).join(" · "),
+    zone,
+    areas,
+    links,
+    confidence: (links.length || areas.length >= 2 ? "high" : location ? "medium" : "low") as "high" | "medium" | "low",
+    distanceHint: links.length ? "Map link attached for distance check" : areas.length ? `Route by ${areas[0]}${areas[1] ? ` + ${areas.length - 1} more area(s)` : ""}` : "Needs location before distance check",
+    syncStatus: (location || areas.length || links.length ? links.length ? "ready" : "needs-map-link" : "needs-location") as "ready" | "needs-map-link" | "needs-location",
+  };
+  const summary = [name || "Unnamed", phone && `☎ ${phone}`, budget && `₹ ${budget}`, moveIn && `move ${moveIn}`, room, need, location || areas.join(", ")]
+    .filter(Boolean).join(" · ");
+
   if (!phone && !email && !name) return null;
 
   return {
     name, phone, email, location, areas, fullAddress,
     budget, moveIn,
-    type, room, need, specialReqs, inBLR, zone,
+    type, room, need, specialReqs, extraContent, summary, budgets, links, geoIntel, inBLR, zone,
     rawSource: raw,
   };
 }
