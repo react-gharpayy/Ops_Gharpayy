@@ -223,6 +223,31 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3" onPaste={onAnyPaste}>
+          {areaFit && (
+            <div className="rounded-md border border-primary/25 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Area Inventory Fit</div>
+                  <div className="text-sm font-semibold text-foreground">{areaFit.zone.area} · {areaFit.fits[0]?.availableBeds ?? 0} beds live</div>
+                </div>
+                <Button type="button" size="sm" variant="secondary" className="h-7 text-[11px]" onClick={scheduleDraft} disabled={!areaFit.fits[0]}>
+                  <CalendarPlus className="h-3 w-3 mr-1" /> Best Tour
+                </Button>
+              </div>
+              <div className="grid gap-1.5">
+                {areaFit.fits.slice(0, 2).map((fit, i) => (
+                  <div key={fit.propertyId} className="rounded border border-border bg-background/70 px-2 py-1.5 text-[11px] flex items-center justify-between gap-2">
+                    <span className="font-medium truncate">{i === 0 ? 'Best' : 'Normal'} · {fit.propertyName}</span>
+                    <span className="text-muted-foreground shrink-0">{fit.availableBeds} beds · ₹{(fit.basePrice / 1000).toFixed(0)}k · {fit.score}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                Flow Ops: {areaFit.flowOps?.name ?? 'Auto'} · TCM: {areaFit.tcm?.name ?? 'Auto'} · {areaFit.fits[0]?.reason ?? 'No matching inventory yet'}
+              </div>
+            </div>
+          )}
+
           {/* Name + Phone */}
           <div className="grid grid-cols-2 gap-2">
             <Field label="👤 Name *">
@@ -381,7 +406,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
                 const dup = checkDup({ name, phone, email, location: areasText });
                 const existing = dup.candidates[0]?.lead;
                 if (existing) scheduleExisting(existing);
-                else toast.error("No existing lead found to schedule");
+                else scheduleDraft();
               }}
               className="gap-1.5"
             >
