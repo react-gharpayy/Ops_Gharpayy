@@ -102,7 +102,7 @@ export function bestInventoryFits(input: {
     .map((m) => {
       const p = m.pg;
       const inv = supplyBedsForPg(p, input.blocks);
-      const basePrice = m.bedPrice ?? p.prices.min || p.prices.double || p.prices.single || p.prices.triple || 0;
+      const basePrice = m.bedPrice ?? (p.prices.min || p.prices.double || p.prices.single || p.prices.triple || 0);
       const priceDelta = budget ? Math.abs(basePrice - budget) / Math.max(1, budget) : 0.2;
       const priceFit: InventoryFit['priceFit'] = !budget || priceDelta <= 0.15 ? 'inside' : basePrice > budget ? 'stretch' : 'low-fit';
       const score = Math.max(0, Math.round(m.total + Math.min(10, inv.beds * 2)));
@@ -154,8 +154,8 @@ export function todaysLoad(tours: Tour[], memberId: string) {
 export function buildAreaOperatingRows(input: { leads: Lead[]; tours: Tour[]; rooms: Room[]; blocks: RoomBlock[]; bookings: Booking[] }): AreaOperatingRow[] {
   const today = new Date().toISOString().split('T')[0];
   return zones.map((z) => {
-    const zoneProps = properties.filter((p) => p.zoneId === z.id);
-    const availableBeds = zoneProps.reduce((sum, p) => sum + availableBedsForProperty(p.id, input.rooms, input.blocks).beds, 0);
+    const zoneProps = PGS.filter((p) => detectAreaZone(p.area).id === z.id);
+    const availableBeds = zoneProps.reduce((sum, p) => sum + supplyBedsForPg(p, input.blocks).beds, 0);
     const leads = input.leads.filter((l) => detectAreaZone(l.area).id === z.id);
     const toursToday = input.tours.filter((t) => t.zoneId === z.id && t.tourDate === today && t.status !== 'cancelled').length;
     const bookings = input.bookings.filter((b) => norm(b.area) === norm(z.area)).length;
