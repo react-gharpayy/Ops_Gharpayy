@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Property, PropertyScores, Room, RoomType } from '@/myt/lib/types';
+import { Property, Room, RoomType } from '@/myt/lib/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -437,6 +437,3 @@ function PropertyDrawer({ property, onClose }: { property: Property; onClose: ()
     </div>
   );
 }
-
-// Suppress unused import warning for PropertyScores type-only consumer
-export type _PSCheck = PropertyScores;
