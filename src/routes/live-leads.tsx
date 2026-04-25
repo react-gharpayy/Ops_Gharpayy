@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useLiveLeads } from "@/hooks/useLiveLeads";
 import { tokenStore } from "@/lib/api/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LeadPasteParser } from "@/components/leads/LeadPasteParser";
+import { TodoPanel } from "@/components/todos/TodoPanel";
+import type { Lead } from "@/contracts";
 
 export const Route = createFileRoute("/live-leads")({
   head: () => ({ meta: [{ title: "Live Leads (Mongo)" }] }),
@@ -15,9 +17,7 @@ export const Route = createFileRoute("/live-leads")({
 
 function LiveLeadsPage() {
   const { leads, loading, error, createLead } = useLiveLeads();
-  const [form, setForm] = useState({ name: "", phone: "", budget: 12000, preferredArea: "Koramangala", moveInDate: new Date().toISOString().slice(0, 10) });
-  const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Lead | null>(null);
 
   if (!tokenStore.get()) {
     return (
@@ -30,59 +30,56 @@ function LiveLeadsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold">Live Leads <Badge variant="secondary">Mongo · Realtime</Badge></h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">Live Leads <Badge variant="secondary">Mongo · Realtime</Badge></h1>
         <p className="text-sm text-muted-foreground">Every change is a command. Updates stream over Socket.IO to all open tabs.</p>
       </div>
 
-      <Card className="p-4 space-y-3">
-        <h2 className="font-semibold">Create lead</h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-          <Input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          <Input placeholder="Area" value={form.preferredArea} onChange={(e) => setForm({ ...form, preferredArea: e.target.value })} />
-          <Input type="number" placeholder="Budget" value={form.budget} onChange={(e) => setForm({ ...form, budget: Number(e.target.value) })} />
-          <Input type="date" value={form.moveInDate} onChange={(e) => setForm({ ...form, moveInDate: e.target.value })} />
-        </div>
-        <Button
-          disabled={submitting || !form.name || !form.phone}
-          onClick={async () => {
-            setSubmitting(true);
-            setMsg(null);
-            const r = await createLead(form);
-            setSubmitting(false);
-            setMsg(r.ok ? `✓ Created (events: ${r.eventIds.length})` : `✗ ${r.error}`);
-            if (r.ok) setForm({ ...form, name: "", phone: "" });
-          }}
-        >
-          {submitting ? "Creating…" : "Create lead"}
-        </Button>
-        {msg && <p className="text-sm">{msg}</p>}
-      </Card>
+      <Tabs defaultValue="paste">
+        <TabsList>
+          <TabsTrigger value="paste">Paste & parse</TabsTrigger>
+          <TabsTrigger value="list">All leads ({leads.length})</TabsTrigger>
+          {selected && <TabsTrigger value="detail">{selected.name}</TabsTrigger>}
+        </TabsList>
 
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">{leads.length} leads</h2>
-          {loading && <span className="text-xs text-muted-foreground">Loading…</span>}
-          {error && <span className="text-xs text-destructive">Error: {error}</span>}
-        </div>
-        <div className="divide-y">
-          {leads.map((l) => (
-            <div key={l._id} className="py-2 flex items-center justify-between">
-              <div>
-                <div className="font-medium">{l.name} <span className="text-xs text-muted-foreground">· {l.phone}</span></div>
-                <div className="text-xs text-muted-foreground">{l.preferredArea} · ₹{l.budget} · move-in {l.moveInDate}</div>
-              </div>
-              <div className="flex gap-2 items-center">
-                <Badge>{l.stage}</Badge>
-                <Badge variant="outline">{l.intent}</Badge>
-              </div>
+        <TabsContent value="paste">
+          <LeadPasteParser onSubmit={(p) => createLead(p)} />
+        </TabsContent>
+
+        <TabsContent value="list">
+          <Card className="p-4">
+            {loading && <p className="text-xs text-muted-foreground">Loading…</p>}
+            {error && <p className="text-xs text-destructive">{error}</p>}
+            <div className="divide-y">
+              {leads.map((l) => (
+                <button key={l._id} type="button" onClick={() => setSelected(l)}
+                  className="w-full text-left py-2 px-1 flex items-center justify-between hover:bg-muted/30 rounded">
+                  <div>
+                    <div className="font-medium">{l.name} <span className="text-xs text-muted-foreground">· {l.phone}</span></div>
+                    <div className="text-xs text-muted-foreground">{l.preferredArea} · ₹{l.budget?.toLocaleString()} · move-in {l.moveInDate}</div>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Badge>{l.stage}</Badge>
+                    <Badge variant="outline">{l.intent}</Badge>
+                  </div>
+                </button>
+              ))}
+              {!loading && leads.length === 0 && <p className="text-sm text-muted-foreground py-4">No leads yet. Use “Paste & parse” to add one.</p>}
             </div>
-          ))}
-          {!loading && leads.length === 0 && <p className="text-sm text-muted-foreground py-4">No leads yet. Create one above.</p>}
-        </div>
-      </Card>
+          </Card>
+        </TabsContent>
+
+        {selected && (
+          <TabsContent value="detail">
+            <Card className="p-4 mb-4">
+              <h2 className="font-semibold">{selected.name}</h2>
+              <p className="text-sm text-muted-foreground">{selected.phone} · {selected.preferredArea} · ₹{selected.budget?.toLocaleString()} · {selected.intent}</p>
+            </Card>
+            <TodoPanel entityType="lead" entityId={selected._id} />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

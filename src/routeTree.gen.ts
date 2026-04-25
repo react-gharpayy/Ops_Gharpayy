@@ -17,6 +17,7 @@ import { Route as SequencesRouteImport } from './routes/sequences'
 import { Route as RevivalRouteImport } from './routes/revival'
 import { Route as RevenueRouteImport } from './routes/revenue'
 import { Route as QueueRouteImport } from './routes/queue'
+import { Route as MyTasksRouteImport } from './routes/my-tasks'
 import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LiveLeadsRouteImport } from './routes/live-leads'
@@ -110,6 +111,11 @@ const RevenueRoute = RevenueRouteImport.update({
 const QueueRoute = QueueRouteImport.update({
   id: '/queue',
   path: '/queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyTasksRoute = MyTasksRouteImport.update({
+  id: '/my-tasks',
+  path: '/my-tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManagerRoute = ManagerRouteImport.update({
@@ -400,6 +406,7 @@ export interface FileRoutesByFullPath {
   '/live-leads': typeof LiveLeadsRoute
   '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
+  '/my-tasks': typeof MyTasksRoute
   '/queue': typeof QueueRoute
   '/revenue': typeof RevenueRoute
   '/revival': typeof RevivalRoute
@@ -464,6 +471,7 @@ export interface FileRoutesByTo {
   '/live-leads': typeof LiveLeadsRoute
   '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
+  '/my-tasks': typeof MyTasksRoute
   '/queue': typeof QueueRoute
   '/revenue': typeof RevenueRoute
   '/revival': typeof RevivalRoute
@@ -529,6 +537,7 @@ export interface FileRoutesById {
   '/live-leads': typeof LiveLeadsRoute
   '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
+  '/my-tasks': typeof MyTasksRoute
   '/queue': typeof QueueRoute
   '/revenue': typeof RevenueRoute
   '/revival': typeof RevivalRoute
@@ -595,6 +604,7 @@ export interface FileRouteTypes {
     | '/live-leads'
     | '/login'
     | '/manager'
+    | '/my-tasks'
     | '/queue'
     | '/revenue'
     | '/revival'
@@ -659,6 +669,7 @@ export interface FileRouteTypes {
     | '/live-leads'
     | '/login'
     | '/manager'
+    | '/my-tasks'
     | '/queue'
     | '/revenue'
     | '/revival'
@@ -723,6 +734,7 @@ export interface FileRouteTypes {
     | '/live-leads'
     | '/login'
     | '/manager'
+    | '/my-tasks'
     | '/queue'
     | '/revenue'
     | '/revival'
@@ -788,6 +800,7 @@ export interface RootRouteChildren {
   LiveLeadsRoute: typeof LiveLeadsRoute
   LoginRoute: typeof LoginRoute
   ManagerRoute: typeof ManagerRoute
+  MyTasksRoute: typeof MyTasksRoute
   QueueRoute: typeof QueueRoute
   RevenueRoute: typeof RevenueRoute
   RevivalRoute: typeof RevivalRoute
@@ -888,6 +901,13 @@ declare module '@tanstack/react-router' {
       path: '/queue'
       fullPath: '/queue'
       preLoaderRoute: typeof QueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-tasks': {
+      id: '/my-tasks'
+      path: '/my-tasks'
+      fullPath: '/my-tasks'
+      preLoaderRoute: typeof MyTasksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manager': {
@@ -1323,6 +1343,7 @@ const rootRouteChildren: RootRouteChildren = {
   LiveLeadsRoute: LiveLeadsRoute,
   LoginRoute: LoginRoute,
   ManagerRoute: ManagerRoute,
+  MyTasksRoute: MyTasksRoute,
   QueueRoute: QueueRoute,
   RevenueRoute: RevenueRoute,
   RevivalRoute: RevivalRoute,
