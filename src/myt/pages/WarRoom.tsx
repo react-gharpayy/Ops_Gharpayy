@@ -7,6 +7,7 @@ import { TrendingUp, AlertTriangle, Target, Zap, Crosshair } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, BarChart, Bar, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 import { GlueFeed } from '@/components/GlueFeed';
+import { buildAreaOperatingRows } from '@/myt/lib/inventory-intelligence';
 
 export default function WarRoom() {
   const { tours, leads, rooms, blocks, bookings } = useAppState();
@@ -82,7 +83,8 @@ export default function WarRoom() {
       .reduce((s, b) => s + b.rentValue, 0);
     const gap = Math.max(0, weeklyTarget - weekRevenue);
 
-    return { expectedRevenue, actualRevenue, forecast, zoneConv, leakPoint, action, gap, weekRevenue, weeklyTarget };
+    const operatingRows = buildAreaOperatingRows({ leads, tours, rooms, blocks, bookings });
+    return { expectedRevenue, actualRevenue, forecast, zoneConv, leakPoint, action, gap, weekRevenue, weeklyTarget, operatingRows };
   }, [tours, leads, rooms, blocks, bookings]);
 
   return (
@@ -187,7 +189,37 @@ export default function WarRoom() {
         <div className="text-[10px] uppercase tracking-wide text-primary font-semibold">Immediate Action Lever</div>
         <div className="text-base md:text-lg font-bold text-foreground mt-1">{data.action.text} →</div>
       </a>
+      <div className="glass-card p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Area operating table</div>
+            <h2 className="font-heading text-base font-semibold text-foreground">Supply × Flow Ops × TCM command</h2>
+          </div>
+          <span className="text-[11px] text-muted-foreground">Push only where inventory can convert.</span>
+        </div>
+        <div className="grid gap-2 md:grid-cols-2">
+          {data.operatingRows.map((row) => (
+            <div key={row.zoneId} className="rounded-lg border border-border bg-surface-2/40 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-medium text-sm text-foreground">{row.area}</div>
+                <span className="text-[10px] rounded-full bg-primary/10 px-2 py-0.5 text-primary">{row.signal}</span>
+              </div>
+              <div className="mt-2 grid grid-cols-4 gap-2 text-center text-[11px]">
+                <Mini label="Leads" value={row.leads} />
+                <Mini label="Beds" value={row.availableBeds} />
+                <Mini label="Tours" value={row.toursToday} />
+                <Mini label="TCM cap" value={row.tcmCapacity} />
+              </div>
+              <div className="mt-2 text-[11px] text-muted-foreground">{row.nextAction}</div>
+            </div>
+          ))}
+        </div>
+      </div>
       <GlueFeed limit={25} title="Closed-loop activity · War Room" />
     </div>
   );
+}
+
+function Mini({ label, value }: { label: string; value: number }) {
+  return <div><div className="font-bold tabular-nums text-foreground">{value}</div><div className="text-[10px] text-muted-foreground">{label}</div></div>;
 }
