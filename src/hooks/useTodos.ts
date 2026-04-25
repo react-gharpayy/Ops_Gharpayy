@@ -1,0 +1,79 @@
+// Realtime Todos hook — works for any (entityType, entityId) combo, OR
+// for "my tasks" (where assignedTo === current user OR createdBy === current user
+// with no assignee). Subscribes to Socket.IO evt.todo.* events.
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { api } from "@/lib/api/client";
+import { onEvent, getSocket } from "@/lib/api/socket";
+import { dispatch } from "@/lib/api/command-bus";
+import type { Todo, DomainEvent, TodoEntityType } from "@/contracts";
+
+export interface UseTodosOpts {
+  entityType?: TodoEntityType;
+  entityId?: string | null;
+  scope?: "mine" | "entity";
+}
+
+export function useTodos(opts: UseTodosOpts = {}) {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const params = useMemo(() => {
+    const p: Record<string, string> = {};
+    if (opts.entityType && opts.entityType !== "none") p.entityType = opts.entityType;
+    if (opts.entityId) p.entityId = opts.entityId;
+    if (opts.scope === "mine") p.scope = "mine";
+    return p;
+  }, [opts.entityType, opts.entityId, opts.scope]);
+
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      const r = await api.todos.list(params);
+      setTodos(r.items);
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally { setLoading(false); }
+  }, [params]);
+
+  useEffect(() => {
+    getSocket();
+    void refresh();
+    const off = onEvent((e: DomainEvent) => {
+      if (!e.type.startsWith("evt.todo.")) return;
+      // Just refresh — todos volume is low and filter logic is non-trivial.
+      void refresh();
+    });
+    return off;
+  }, [refresh]);
+
+  const create = useCallback(async (input: {
+    title: string;
+    notes?: string;
+    priority?: "low" | "med" | "high" | "urgent";
+    dueAt?: string | null;
+    assignTo?: string | null;
+  }) => {
+    return dispatch({
+      type: "cmd.todo.create",
+      payload: {
+        title: input.title,
+        notes: input.notes,
+        priority: input.priority,
+        dueAt: input.dueAt ?? null,
+        entityType: opts.entityType ?? "none",
+        entityId: opts.entityId ?? null,
+        assignTo: input.assignTo ?? null,
+      },
+    });
+  }, [opts.entityType, opts.entityId]);
+
+  const accept   = useCallback((todoId: string) => dispatch({ type: "cmd.todo.accept",   payload: { todoId } }), []);
+  const decline  = useCallback((todoId: string, reason?: string) => dispatch({ type: "cmd.todo.decline", payload: { todoId, reason } }), []);
+  const complete = useCallback((todoId: string) => dispatch({ type: "cmd.todo.complete", payload: { todoId } }), []);
+  const cancel   = useCallback((todoId: string) => dispatch({ type: "cmd.todo.cancel",   payload: { todoId } }), []);
+  const assign   = useCallback((todoId: string, assignTo: string) => dispatch({ type: "cmd.todo.assign", payload: { todoId, assignTo } }), []);
+
+  return { todos, loading, error, refresh, create, accept, decline, complete, cancel, assign };
+}
