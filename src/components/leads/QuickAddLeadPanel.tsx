@@ -218,6 +218,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     const parsed = parseLead(txt);
     if (!parsed) return;
     e.preventDefault();
+    setLastParsed(parsed);
     if (parsed.name) setName(parsed.name);
     if (parsed.phone) setPhone(parsed.phone);
     if (parsed.email) setEmail(parsed.email);
@@ -231,7 +232,15 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
     if (parsed.need) setNeed(parsed.need.split(" / ")[0] ?? parsed.need);
     if (parsed.specialReqs) setSpecialReqs(parsed.specialReqs);
     if (parsed.inBLR !== null) setInBLR(parsed.inBLR);
-    toast.success("Auto-filled from WhatsApp paste");
+    const dup = checkDup({ name: parsed.name, phone: parsed.phone, email: parsed.email, location: parsed.areas?.join(", ") || parsed.location });
+    const existing = dup.candidates[0]?.lead;
+    if (existing && (dup.type === "exact" || dup.type === "strong")) {
+      toast.warning(`Existing lead found: ${existing.name}`, {
+        action: { label: "Open Tour", onClick: () => scheduleExisting(existing) },
+      });
+      return;
+    }
+    toast.success("Auto-filled from paste · Tour action is ready");
   };
 
   return (
