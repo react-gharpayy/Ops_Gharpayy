@@ -120,6 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/myt/zones", label: "Zones", icon: MapPin },
       { to: "/myt/owners-compare", label: "Owners", icon: ShieldCheck },
       { to: "/supply-hub", label: "Supply Hub", icon: Layers },
+      { to: "/my-tasks", label: "My Tasks", icon: ListTodo },
     ],
     "flow-ops": [
       { to: "/today", label: "Today", icon: Sun, badge: queue.length },
@@ -130,6 +131,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/myt/marketplace", label: "Marketplace", icon: Store },
       { to: "/supply-hub", label: "Supply Hub", icon: Layers },
       { to: "/sequences", label: "Outreach", icon: Zap },
+      { to: "/my-tasks", label: "My Tasks", icon: ListTodo },
     ],
     tcm: [
       { to: "/today", label: "Today", icon: Sun, badge: queue.length },
@@ -140,6 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/handoffs", label: "Handoffs", icon: MessageSquare, badge: unreadHandoffs },
       { to: "/myt/marketplace", label: "Marketplace", icon: Store },
       { to: "/myt/tcm/performance", label: "My Stats", icon: Activity },
+      { to: "/my-tasks", label: "My Tasks", icon: ListTodo },
     ],
     owner: [
       { to: "/owner", label: "Owner Home", icon: ShieldCheck, accent: true },
@@ -148,6 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/owner/inventory", label: "Inventory", icon: Layers },
       { to: "/owner/visits", label: "Tours", icon: Camera },
       { to: "/owner/insights", label: "Insights", icon: IndianRupee },
+      { to: "/my-tasks", label: "My Tasks", icon: ListTodo },
     ],
   };
   const items = navByRole[role];
