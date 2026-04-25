@@ -122,9 +122,9 @@ export function runParserSuite(rawSamples: string[]): ParserTestReport {
 
 /** Parse a CSV file (text) and pull each rawText cell to feed the suite. */
 export function extractSamplesFromCsv(csvText: string): string[] {
-  const result = Papa.parse<Record<string, string>>(csvText, { header: true, skipEmptyLines: true });
+  const rows = parseCsv(csvText);
   const out: string[] = [];
-  for (const row of result.data) {
+  for (const row of rows) {
     const candidate = row.rawText ?? row.raw ?? row.text ?? row.paste ?? "";
     if (candidate && candidate.trim().length > 4) out.push(candidate);
   }
