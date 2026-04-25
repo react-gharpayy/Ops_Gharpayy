@@ -1,6 +1,12 @@
 // Paste-to-Lead parser. Handles WhatsApp forms, plain text, spreadsheet rows,
 // emoji-heavy formats, AND unlabeled "casual" formats (name on line 1, bare
 // phone/email/location/budget/move-in stacked vertically).
+//
+// IMPORTANT: Pre-normalises literal escape sequences (\r\n / \n / \r as text,
+// not real newlines) that arrive when content is round-tripped through CSV
+// exports, JSON dumps, or certain copy-paste paths. Also cuts each labeled
+// field at the *next* label keyword (Phone:, Budget:, Move in:, etc.) so
+// fields don't bleed into each other when pastes arrive on one physical line.
 import type { ParsedLeadDraft } from "./types";
 
 interface ZoneDef {
@@ -28,11 +34,11 @@ const ZONES: ZoneDef[] = [
     zone: "East", priority: 2,
     keywords: [
       "whitefield","white field","hopefarm","itpl","kundanahalli","kundalahalli","kadugodi",
-      "brookfield","hoodi","garudacharpalya","varthur","nallurhalli","kr puram","seetharampalya",
-      "bellandur","sarjapur","ecospace","embassy tech village","prestige tech park","yemalur",
+      "brookfield","hoodi","garudacharpalya","varthur","nallurhalli","kr puram","seetharampalya","seetharam palya",
+      "bellandur","sarjapur","ecospace","embassy tech village","prestige tech park","prestige technopark","yemalur",
       "indiranagar","indranagar","indira nagar","domlur","ejipura","murgeshpalya",
       "cv raman nagar","new thippasandra","old airport road","airport road","hal",
-      "marathahalli","marathalli","mahadevapura","mahadevpura","bagmane",
+      "marathahalli","marathalli","mahadevapura","mahadevpura","bagmane","brigade tech",
       "kadubeesanahalli","kadubeesana","spice garden","phoenix market city","brigade metropolis",
       "rmz infinity","prestige shantiniketan","whitefield metro","aecs layout","aecs",
     ],
@@ -75,7 +81,7 @@ export function detectZone(rawText: string): string {
   return "";
 }
 
-const EMOJI_RE = /[📝📱✉️📍💰📆👨🏢👫✨💥💯⚡🔥💛😘🏠🎯👥]/g;
+const EMOJI_RE = /[📝📱✉️📍💰📆📅👨🏢👫✨💥💯⚡🔥💛😘🏠🎯👥📞👤💼🛏️]/g;
 
 const LOCATION_HINTS = [
   ...ZONES.flatMap((z) => z.keywords),
@@ -85,6 +91,42 @@ const LOCATION_HINTS = [
 
 const NON_NAME_TOKENS = /\b(name|phone|mobile|email|location|area|budget|move|moving|room|need|special|request|profession|working|student|intern|girls?|boys?|coed|private|shared|sharing|single|double|triple|ac|veg|gym|preferred|in\s*blr|out\s*of)\b/i;
 
+// All known label keywords used to *terminate* a previous field's value when
+// a paste arrives on one physical line (no real newlines).
+const LABEL_TERMINATORS =
+  "(?:Name|Phone|Mobile|Ph|Contact|Email|E-mail|Mail|" +
+  "Preferred\\s*Location|Location|Area|Landmark|Map\\s*link|" +
+  "Budget(?:\\s*Range)?|Budjet|Actual\\s*budget|" +
+  "Move[-\\s]?in(?:[-\\s]?Date)?|Moving(?:\\s*Date)?|Movein|" +
+  "Profession|Occupation|Working|Student|Intern|" +
+  "Room(?:\\s*Type)?|Sharing|" +
+  "Need|NEED|Cohort|" +
+  "Special\\s*Requests?|Special\\s*Request|Notes?|Remarks?|" +
+  "How\\s*Many\\s*Members|Members?)";
+
+const LABEL_TERMINATOR_LOOKAHEAD = new RegExp(`\\s+${LABEL_TERMINATORS}\\s*[:\\-–]`, "i");
+
+/** Cut a captured field value at the start of the next label keyword. */
+function cutAtNextLabel(value: string): string {
+  if (!value) return value;
+  const m = value.match(LABEL_TERMINATOR_LOOKAHEAD);
+  if (m && m.index !== undefined) return value.slice(0, m.index);
+  return value;
+}
+
+/** Pre-normalise raw paste: convert literal escape sequences and CRLF to \n. */
+function normalisePaste(raw: string): string {
+  return raw
+    // First handle literal \r\n / \n / \r escape sequences (4-char strings)
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\n")
+    .replace(/\\t/g, " ")
+    // Then real CRLF
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
+}
+
 function looksLikeName(line: string): boolean {
   const t = line.trim();
   if (!t || t.length < 2 || t.length > 50) return false;
@@ -92,10 +134,8 @@ function looksLikeName(line: string): boolean {
   if (/@/.test(t)) return false;
   if (NON_NAME_TOKENS.test(t)) return false;
   if (LOCATION_HINTS.some((k) => t.toLowerCase().includes(k))) return false;
-  // Must look like a name: alphabetic words
   const words = t.replace(/[^a-zA-Z\s.]/g, "").trim().split(/\s+/).filter(Boolean);
   if (words.length < 1 || words.length > 5) return false;
-  // First word should start with a capital OR be all-caps; lowercase-only strings are usually descriptions
   return /^[A-Z]/.test(words[0]) || /^[a-z]/.test(words[0]);
 }
 
@@ -109,7 +149,6 @@ function looksLikeLocation(line: string): boolean {
 
 function looksLikeBudget(line: string): boolean {
   const t = line.trim().toLowerCase().replace(/[₹,\s]/g, "");
-  // Pure numeric (4-6 digits) OR contains k OR has range with -
   return /^\d{3,6}$/.test(t) ||
     /^\d+(?:\.\d+)?k$/i.test(t) ||
     /^\d+[-–to]+\d+k?$/i.test(t) ||
@@ -119,7 +158,7 @@ function looksLikeBudget(line: string): boolean {
 function looksLikeDate(line: string): boolean {
   const t = line.trim().toLowerCase();
   if (t.length > 40) return false;
-  return /^(immediate|asap|now)/i.test(t) ||
+  return /^(immediate|asap|now|today|tomorrow)/i.test(t) ||
     /\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}/.test(t) ||
     /\d{1,2}(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(t) ||
     /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}/i.test(t) ||
@@ -128,7 +167,7 @@ function looksLikeDate(line: string): boolean {
 
 function normalizeRoom(text: string): string {
   const t = text.toLowerCase();
-  const hasPrivate = /\b(private|single|1\s*sharing|1bhk)\b/.test(t);
+  const hasPrivate = /\b(private|single|1\s*sharing|1bhk|studio)\b/.test(t);
   const hasShared = /\b(shared|sharing|double|2\s*sharing|triple|3\s*sharing|twin)\b/.test(t);
   if (hasPrivate && hasShared) return "Both";
   if (hasPrivate) return "Private";
@@ -136,9 +175,21 @@ function normalizeRoom(text: string): string {
   return "";
 }
 
+/** Title-case a name string, preserving common patronymic letters. */
+function titleCase(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export function parseLead(raw: string): ParsedLeadDraft | null {
   if (!raw || raw.trim().length < 4) return null;
-  const clean = raw
+
+  // Normalise escape sequences and CRLF up front
+  const normalised = normalisePaste(raw);
+  const clean = normalised
     .replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1")
     .replace(/_{1,3}([^_\n]+)_{1,3}/g, "$1")
     .replace(/`([^`]+)`/g, "$1");
@@ -146,7 +197,11 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   const grab = (...patterns: RegExp[]): string => {
     for (const re of patterns) {
       const m = clean.match(re);
-      if (m?.[1]) return m[1].replace(EMOJI_RE, "").trim();
+      if (m?.[1]) {
+        let v = m[1].replace(EMOJI_RE, "").trim();
+        v = cutAtNextLabel(v);
+        return v.replace(/^[\s,;:|.\-–—]+|[\s,;:|.\-–—]+$/g, "").trim();
+      }
     }
     return "";
   };
@@ -159,50 +214,59 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   const emailMatch = clean.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
   const email = emailMatch?.[0] ?? "";
 
-  // ---------- Name (labeled first, then heuristic) ----------
+  // ---------- Name ----------
   let name = grab(
-    /(?:^|\n)\s*Name\s*[:\-–*]+\s*([^\n,📱\d]{2,40})/im,
-    /(?:^|\n)\s*\.Name\s+([^\n.]{2,35})/im,
-  ).replace(/^\W+|\W+$/g, "").trim();
+    /(?:^|\n)\s*Name\s*[:\-–*]+\s*([^\n,📱\d]{2,60})/im,
+    /(?:^|\n)\s*\.Name\s+([^\n.]{2,60})/im,
+    /(?:^|\n)\s*[-–]\s*([A-Z][a-z][^\n\d]{1,40})\s*\n/m,
+  );
+  // Defensive: name may still contain trailing label fragments after newline
+  // collapse — strip up to first digit / @ / known label.
+  if (name) {
+    name = name
+      .split(/\s+(?:Phone|Mobile|Email|Location|Budget|Move|Moving|Working|Student|Room|Need)\b/i)[0]
+      .replace(/[\d@].*$/, "")
+      .replace(/^\W+|\W+$/g, "")
+      .trim();
+  }
 
   if (!name) {
-    // Try first-line heuristic
     const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
     for (const line of lines.slice(0, 3)) {
       const stripped = line.replace(EMOJI_RE, "").replace(/^[-–*•]\s*/, "").trim();
-      // If line has phone embedded: "Rahul Sharma 9876543210"
       const inlineMatch = stripped.match(/^([A-Za-z][A-Za-z\s.]{1,40}?)\s+(?:\+?91)?[6-9]\d{9}/);
       if (inlineMatch) { name = inlineMatch[1].trim(); break; }
       if (looksLikeName(stripped)) { name = stripped; break; }
     }
   }
-  // Title-case
-  if (name) {
-    name = name.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-  }
+  if (name) name = titleCase(name);
 
   // ---------- Location ----------
   let location = grab(
-    /Preferred Location[^:\n]*[:\-–]+\s*([^\n💰📆👨🏢]{3,80})/i,
-    /Which location\s*[:\-–]+\s*([^\n]{3,60})/i,
-    /Location\s*[:\-–]+\s*([^\n💰📆👨🏢]{3,80})/i,
-    /Area\s*[:\-–]+\s*([^\n]{3,60})/i,
-  ).replace(/\(Map link\)|https?:\/\/\S+/gi, "").replace(EMOJI_RE, "").trim();
+    /Preferred\s*Location[^:\n]*[:\-–]+\s*([^\n💰📆👨🏢]{3,200})/i,
+    /Which\s+location\s*[:\-–]+\s*([^\n]{3,200})/i,
+    /Location\s*[:\-–]+\s*([^\n💰📆👨🏢]{3,200})/i,
+    /Area\s*[:\-–]+\s*([^\n]{3,200})/i,
+    /Landmark[^:\n]*[:\-–]+\s*([^\n]{3,200})/i,
+  );
+  // Strip embedded map links
+  location = location.replace(/\(Map\s*link\)|https?:\/\/\S+/gi, "").trim();
 
   if (!location) {
-    // Heuristic: scan for location-like lines
     for (const line of clean.split("\n").map((l) => l.trim())) {
-      if (looksLikeLocation(line) && !looksLikeBudget(line)) { location = line.replace(EMOJI_RE, "").trim(); break; }
+      if (looksLikeLocation(line) && !looksLikeBudget(line)) {
+        location = line.replace(EMOJI_RE, "").trim();
+        break;
+      }
     }
   }
 
   // ---------- Budget ----------
   let budget = grab(
-    /(?:Actual budget|Budget Range|Budget range|Budget is|Budget|Budjet)\s*[:\-–(]*\s*([^\n)📆👨🏢]{2,35})/i,
+    /(?:Actual\s*budget|Budget\s*Range|Budget\s*range|Budget\s*is|Budget|Budjet)\s*[:\-–(]*\s*([^\n)📆👨🏢]{2,80})/i,
   ).replace(/[₹()\[\]]/g, "").replace(/\s+/g, " ").trim();
 
   if (!budget) {
-    // Heuristic: scan stand-alone budget-like lines
     for (const line of clean.split("\n").map((l) => l.trim())) {
       if (looksLikeBudget(line)) { budget = line.replace(/[₹]/g, "").trim(); break; }
     }
@@ -210,11 +274,11 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
 
   // ---------- Move-in ----------
   let moveIn = grab(
-    /Move[- ]?in[- ]?Date\s*[:\-–😘*]+\s*([^\n👨🏢👫✨]{2,35})/i,
-    /Moving Date\s*[:\-–]+\s*([^\n]{2,30})/i,
-    /Move[- ]?in\s*[:\-–]+\s*([^\n]{2,30})/i,
-    /Movein\s*[:\-–]+\s*([^\n]{2,30})/i,
-  ).trim();
+    /Move[-\s]?in[-\s]?Date\s*[:\-–😘*]+\s*([^\n👨🏢👫✨]{2,80})/i,
+    /Moving\s*Date\s*[:\-–]+\s*([^\n]{2,60})/i,
+    /Move[-\s]?in\s*[:\-–]+\s*([^\n]{2,60})/i,
+    /Movein\s*[:\-–]+\s*([^\n]{2,60})/i,
+  );
 
   if (!moveIn) {
     for (const line of clean.split("\n").map((l) => l.trim())) {
@@ -223,7 +287,7 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
   }
 
   // ---------- Type ----------
-  const isWorking = /\bworking\b|\bprofessional\b|\banalyst\b|\banalysist\b|\bmarketer\b|\bengineer\b|\bdeveloper\b/i.test(clean);
+  const isWorking = /\bworking\b|\bprofessional\b|\banalyst\b|\banalysist\b|\bmarketer\b|\bengineer\b|\bdeveloper\b|\bemployee\b/i.test(clean);
   const isStudent = /\bstudent\b/i.test(clean);
   const isIntern = /\bintern(?:ing)?\b/i.test(clean);
   const type = isWorking && isStudent ? "Student/Working"
@@ -232,26 +296,28 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
     : isIntern ? "Intern" : "";
 
   // ---------- Room ----------
-  const roomLabeled = grab(/Room\s*[*:\-–(]+\s*([^\n👫✨📞]{2,40})/i);
+  const roomLabeled = grab(/Room(?:\s*Type)?\s*[*:\-–(]+\s*([^\n👫✨📞]{2,60})/i);
   const room = normalizeRoom(roomLabeled || clean);
 
   // ---------- Need ----------
   const needRaw = grab(
-    /NEED\s*[*:\-–(]+\s*([^\n✨📞]{2,35})/i,
-    /Need\s*[:\-–]+\s*([^\n]{2,35})/i,
+    /NEED\s*[*:\-–(]+\s*([^\n✨📞]{2,60})/i,
+    /Need\s*[:\-–]+\s*([^\n]{2,60})/i,
+    /Cohort\s*[:\-–]+\s*([^\n]{2,60})/i,
   ).toLowerCase();
-  const wantGirls = needRaw.includes("girl") || /\bgirls?\b/i.test(clean);
+  const wantGirls = needRaw.includes("girl") || /\bgirls?\s*(?:pg|preferable|only)?/i.test(clean);
   const wantBoys = needRaw.includes("boy") || /\bboys?\b/i.test(clean);
   const wantCoed = needRaw.includes("coed") || /\bcoed\b/i.test(clean);
   const need = [wantGirls && "Girls", wantBoys && "Boys", wantCoed && "Coed"].filter(Boolean).join(" / ");
 
-  // ---------- Special requests (labeled + heuristic fallback) ----------
+  // ---------- Special requests ----------
   let specialReqs = grab(
-    /Special Requests?\s*[*:\-–(]+\s*([^\n*📞]{2,200})/i,
+    /Special\s*Requests?\s*[*:\-–(]+\s*([^\n*📞]{2,200})/i,
+    /Notes?\s*[:\-–]+\s*([^\n]{2,200})/i,
+    /Remarks?\s*[:\-–]+\s*([^\n]{2,200})/i,
   ).replace(/\b(NA|None|n\/a|If any)\b/gi, "").trim();
 
   if (!specialReqs) {
-    // Heuristic: collect free-text lines that aren't already classified
     const consumed = new Set<string>();
     [name, phone, email, location, budget, moveIn].forEach((v) => v && consumed.add(v.toLowerCase().trim()));
     const extras: string[] = [];
@@ -263,8 +329,7 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
       if (/\d{6,}/.test(line)) continue;
       if (/@/.test(line)) continue;
       if (looksLikeBudget(line) || looksLikeDate(line)) continue;
-      if (NON_NAME_TOKENS.test(line) && !/\b(veg|non[- ]?veg|ac|gym|wifi|food|parking|pet|ventilation|spacious|clean|backup|family)\b/i.test(line)) continue;
-      // Keep amenity-like or descriptive lines
+      if (NON_NAME_TOKENS.test(line) && !/\b(veg|non[- ]?veg|ac|gym|wifi|food|parking|pet|ventilation|spacious|clean|backup|family|balcony|attached|sunlight|quiet|washroom)\b/i.test(line)) continue;
       if (/\b(veg|non[- ]?veg|ac|gym|wifi|food|parking|pet|ventilation|spacious|clean|backup|family|quiet|sunlight|balcony|attached|washroom)\b/i.test(line)
           || (/^[A-Za-z]/.test(line) && line.split(/\s+/).length >= 3)) {
         extras.push(line);
@@ -273,11 +338,11 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
     specialReqs = extras.join("; ").slice(0, 240);
   }
 
-  const inBLRTrue = /\bin\s*blr\b|in bangalore|currently in bangalore|already here|yes.*blr/i.test(raw);
-  const inBLRFalse = /not in blr|not in bangalore|outside bangalore|relocating|out.*blr/i.test(raw);
+  const inBLRTrue = /\bin\s*blr\b|in bangalore|currently in bangalore|already here|yes.*blr/i.test(normalised);
+  const inBLRFalse = /not in blr|not in bangalore|outside bangalore|relocating|out.*blr/i.test(normalised);
   const inBLR = inBLRTrue ? true : inBLRFalse ? false : null;
 
-  const zone = detectZone(raw);
+  const zone = detectZone(normalised);
 
   if (!phone && !email && !name) return null;
 
@@ -289,7 +354,8 @@ export function parseLead(raw: string): ParsedLeadDraft | null {
 }
 
 export function splitLeads(text: string): string[] {
-  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const norm = normalisePaste(text);
+  const lines = norm.split("\n");
   const chunks: string[] = [];
   let cur: string[] = [];
 
