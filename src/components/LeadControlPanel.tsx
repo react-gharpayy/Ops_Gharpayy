@@ -451,6 +451,8 @@ export function LeadControlPanel() {
                   propertyId={propertyId}
                   tcmId={tcmId}
                   scheduledAt={scheduledAt}
+                  answers={scheduleAnswers}
+                  onAnswersChange={(patch) => setScheduleAnswers((answers) => ({ ...answers, ...patch }))}
                   onPropertyChange={setPropertyId}
                   onTcmChange={setTcmId}
                   onScheduledAtChange={setScheduledAt}
