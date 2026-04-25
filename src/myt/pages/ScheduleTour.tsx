@@ -96,7 +96,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
       budget,
       workLocation: area || f.workLocation,
       occupation: type || f.occupation,
-      roomType: room.includes('private') ? 'Single' : room.includes('shared') ? 'Double Sharing' : f.roomType,
+      roomType: normalizeRoomForTour(room || f.roomType),
       keyConcern: notes || f.keyConcern,
       zoneId: incomingFit?.zoneId || f.zoneId,
       propertyName: incomingFit?.propertyName || f.propertyName,
@@ -183,7 +183,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
     if (ulid) setLifecycleState(ulid, 'visit-scheduled');
 
     // Auto room block based on intent
-    const matchingProp = allProperties.find(p => p.name === form.propertyName && p.zoneId === form.zoneId);
+    const matchingProp = supplyHubProperties.find(p => p.name === form.propertyName && p.zoneId === form.zoneId);
     if (matchingProp) {
       const tourWithProp = { ...newTour, propertyId: matchingProp.id };
       const block = createBlockForTour(tourWithProp, rooms, blocks);
@@ -215,7 +215,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
   const debugAreaText = String(pastedLead?.area ?? pastedLead?.location ?? pastedLead?.fullAddress ?? incomingLead?.area ?? incomingLead?.location ?? form.workLocation ?? '');
   const detectedArea = debugAreaText ? detectAreaZone(debugAreaText) : zones.find((z) => z.id === form.zoneId);
   const debugBudget = parseBudgetAmount(pastedLead?.budget ?? incomingLead?.budget ?? form.budget);
-  const selectedProperty = allProperties.find((p) => p.name === form.propertyName || p.id === incomingFit?.propertyId);
+  const selectedProperty = supplyHubProperties.find((p) => p.name === form.propertyName || p.id === incomingFit?.propertyId);
   const selectedInventory = selectedProperty ? availableBedsForProperty(selectedProperty.id, rooms, blocks) : null;
   const calculatedFits = useMemo(() => (
     debugAreaText ? bestInventoryFits({ areaText: debugAreaText, budget: debugBudget, room: String(pastedLead?.room ?? incomingLead?.room ?? form.roomType), rooms, blocks, limit: 3 }) : []
