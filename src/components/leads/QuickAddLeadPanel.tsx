@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "@/shims/react-router-dom";
 import { useAppState } from "@/myt/lib/app-context";
 import { bestInventoryFits, detectAreaZone, recommendedFlowOps, recommendedTcm } from "@/myt/lib/inventory-intelligence";
+import { QUICKAD_NEED_OPTIONS, QUICKAD_ROOM_OPTIONS, QUICKAD_TYPE_OPTIONS, parseBudgetAmount } from "@/lib/quickad-shared";
 import type { ParsedLeadDraft } from "@/lib/lead-identity/types";
 
 interface Props { open: boolean; onClose: () => void; }
@@ -50,9 +51,9 @@ const STAGES = [
   "LOST 😭",
 ] as const;
 
-const TYPE_OPTS = ["Student", "Working", "Intern", "Family", "Other"];
-const ROOM_OPTS = ["Private", "Shared", "Both", "Studio"];
-const NEED_OPTS = ["Boys", "Girls", "Coed"];
+const TYPE_OPTS = QUICKAD_TYPE_OPTIONS;
+const ROOM_OPTS = QUICKAD_ROOM_OPTIONS;
+const NEED_OPTS = QUICKAD_NEED_OPTIONS;
 const QUALITY_OPTS = [
   { v: "hot" as const, label: "🔥 Hot" },
   { v: "good" as const, label: "✅ Good" },
@@ -63,14 +64,6 @@ const BLR_OPTS = [
   { v: false as const, label: "✈️ Out" },
   { v: null, label: "❓ Unknown" },
 ];
-
-const parseBudgetAmount = (value: string | number | undefined) => {
-  const raw = String(value ?? "").toLowerCase().replace(/,/g, " ");
-  const matches = [...raw.matchAll(/(\d+(?:\.\d+)?)\s*(k|000)?/g)]
-    .map((m) => Math.round(Number(m[1]) * (m[2] === "k" ? 1000 : m[2] === "000" ? 1000 : Number(m[1]) <= 80 ? 1000 : 1)))
-    .filter((n) => Number.isFinite(n) && n > 0);
-  return matches.length ? Math.max(...matches) : 0;
-};
 
 export function QuickAddLeadPanel({ open, onClose }: Props) {
   const checkDup = useIdentityStore((s) => s.checkDuplicates);
@@ -154,6 +147,12 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
 
   const scheduleDraft = () => {
     if (!name.trim() || !phone.trim()) { toast.error("Need name and phone before scheduling"); return; }
+    const dup = checkDup({ name, phone, email, location: areasText });
+    const existing = dup.candidates[0]?.lead;
+    if (existing && (dup.type === "exact" || dup.type === "strong")) {
+      scheduleExisting(existing);
+      return;
+    }
     onClose();
     navigate("/myt/schedule", {
       state: {
