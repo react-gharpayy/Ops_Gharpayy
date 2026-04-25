@@ -82,6 +82,22 @@ export function LeadControlPanel() {
   const [tcmId, setTcmId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [isSchedulingAnother, setIsSchedulingAnother] = useState(false);
+  const [scheduleAnswers, setScheduleAnswers] = useState({
+    bookingSource: "whatsapp",
+    decisionMaker: "self",
+    moveInDate: "",
+    budget: "",
+    occupation: "",
+    workLocation: "",
+    roomType: "Single",
+    readyIn48h: false,
+    exploring: false,
+    comparing: false,
+    needsFamily: false,
+    willBookToday: "maybe",
+    keyConcern: "",
+    tourType: "physical",
+  });
   const [tab, setTab] = useState("control");
   const [, mounted] = useMountedNow();
 
@@ -99,6 +115,13 @@ export function LeadControlPanel() {
     setPropertyId(upcomingTour?.propertyId ?? "");
     setTcmId(upcomingTour?.tcmId ?? lead.assignedTcmId ?? "");
     setScheduledAt(upcomingTour ? toLocal(upcomingTour.scheduledAt) : "");
+    setScheduleAnswers((answers) => ({
+      ...answers,
+      budget: String(lead.budget || ""),
+      moveInDate: lead.moveInDate || "",
+      workLocation: lead.preferredArea || "",
+      keyConcern: lead.tags.join(", "),
+    }));
     setIsSchedulingAnother(false);
     setTab(pendingPostTour ? "post" : upcomingTour ? "tour" : settings.matching.drawerDefaultTab);
   }, [lead, pendingPostTour, upcomingTour, settings.matching.drawerDefaultTab]);
