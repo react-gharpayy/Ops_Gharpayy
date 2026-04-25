@@ -92,23 +92,43 @@ function extractByLabel(text: string, labels: readonly string[]): string | undef
   return undefined;
 }
 
+function cleanNameCandidate(s: string): string {
+  return s
+    .replace(/^(hi|hello|hey|fyi|new|lead|client|guest|tenant)[\s,!:]+/i, "")
+    .replace(/[+\d][\d\s\-]{4,}/g, "")        // strip phone-like runs
+    .replace(/[,;:!.\-–|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function extractName(text: string, phone: string | undefined, issues: ParseIssue[]): string | undefined {
   // 1. Try labelled
   let raw = extractByLabel(text, FIELD_LABELS.name);
   if (raw) {
-    raw = raw.split(/\s+(?:phone|mob|mobile|whatsapp|wa|ph|contact|number|email|mail|budget|rent|bhk|location|area)\b/i)[0].trim();
-    raw = raw.replace(/[+\d][\d\s\-]{6,}/g, "").trim();
+    raw = raw.split(/\s+(?:phone|mob|mobile|whatsapp|wa|ph|contact|number|email|mail|budget|rent|bhk|location|area)\b/i)[0];
+    raw = cleanNameCandidate(raw);
     if (raw.length >= 2 && raw.length <= 80) return titleCase(raw);
   }
-  // 2. First line, before phone — common WhatsApp pattern
+  // 2. Try first line: take only the chunk BEFORE any verb/keyword that signals "intent text"
   const firstLine = text.split(/\n/)[0]?.trim() ?? "";
+  const stopWords = /\b(?:looking|wants?|need|needs|interested|requires?|requirement|searching|search|near|in|for|budget|rent|bhk|studio|move|moving|shift|asap|urgent)\b/i;
+  // Use part before phone if present, else before first stop-word, else first 4 words
+  let candidate = "";
   if (phone && firstLine.includes(phone)) {
-    const before = firstLine.split(phone)[0].replace(/[+\d][\d\s\-]{4,}/g, "").trim();
-    if (before.length >= 2 && before.length <= 60 && /[a-zA-Z]/.test(before)) return titleCase(before.replace(/[.,;:\-–]+$/, ""));
+    candidate = firstLine.split(phone)[0];
+  } else {
+    const m = stopWords.exec(firstLine);
+    candidate = m ? firstLine.slice(0, m.index) : firstLine.split(/\s+/).slice(0, 4).join(" ");
   }
-  // 3. Look for capitalised 2-word sequence near a known first name
-  const candidate = findKnownName(text);
-  if (candidate) return candidate;
+  candidate = cleanNameCandidate(candidate);
+  // Validate: must look like a name — alphabetic words only, 1-4 words
+  const words = candidate.split(/\s+/).filter(Boolean);
+  if (words.length >= 1 && words.length <= 4 && words.every((w) => /^[a-zA-Z][a-zA-Z'.\-]*$/.test(w)) && candidate.length <= 60) {
+    return titleCase(candidate);
+  }
+  // 3. Look for known first name anywhere
+  const known = findKnownName(text);
+  if (known) return known;
 
   issues.push({ field: "name", severity: "error", message: "Could not detect a name", suggestion: "Add a line like 'Name: Rahul Sharma'" });
   return undefined;
