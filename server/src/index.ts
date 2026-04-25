@@ -9,6 +9,7 @@ import { attachSocketIO } from "./realtime/socket.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerLeadsRoutes } from "./modules/leads/routes.js";
 import { registerTodosRoutes } from "./modules/todos/routes.js";
+import { registerActivitiesRoutes } from "./modules/activities/routes.js";
 
 async function main() {
   const app = Fastify({
@@ -30,6 +31,7 @@ async function main() {
   registerAuthRoutes(app);
   registerLeadsRoutes(app);
   registerTodosRoutes(app);
+  registerActivitiesRoutes(app);
 
   await attachSocketIO(app);
 

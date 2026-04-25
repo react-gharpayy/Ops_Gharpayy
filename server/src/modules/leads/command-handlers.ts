@@ -55,6 +55,13 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
     const { applyTodoCommand } = await import("../todos/command-handlers.js");
     return applyTodoCommand(cmd, user);
   }
+  // Delegate activity commands
+  if (cmd.type.startsWith("cmd.activity.")) {
+    const { applyActivityCommand } = await import("../activities/command-handlers.js");
+    return applyActivityCommand(cmd, user);
+  }
+
+  const { autoLogActivity } = await import("../activities/command-handlers.js");
 
   const now = new Date().toISOString();
   const correlationId = cmd._id;
