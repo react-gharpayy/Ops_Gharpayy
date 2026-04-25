@@ -18,6 +18,8 @@ import { Route as RevivalRouteImport } from './routes/revival'
 import { Route as RevenueRouteImport } from './routes/revenue'
 import { Route as QueueRouteImport } from './routes/queue'
 import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as LiveLeadsRouteImport } from './routes/live-leads'
 import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as InventoryRouteImport } from './routes/inventory'
@@ -113,6 +115,16 @@ const QueueRoute = QueueRouteImport.update({
 const ManagerRoute = ManagerRouteImport.update({
   id: '/manager',
   path: '/manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveLeadsRoute = LiveLeadsRouteImport.update({
+  id: '/live-leads',
+  path: '/live-leads',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeadsRoute = LeadsRouteImport.update({
@@ -385,6 +397,8 @@ export interface FileRoutesByFullPath {
   '/inventory': typeof InventoryRoute
   '/leaderboard': typeof LeaderboardRoute
   '/leads': typeof LeadsRouteWithChildren
+  '/live-leads': typeof LiveLeadsRoute
+  '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
   '/queue': typeof QueueRoute
   '/revenue': typeof RevenueRoute
@@ -447,6 +461,8 @@ export interface FileRoutesByTo {
   '/inventory': typeof InventoryRoute
   '/leaderboard': typeof LeaderboardRoute
   '/leads': typeof LeadsRouteWithChildren
+  '/live-leads': typeof LiveLeadsRoute
+  '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
   '/queue': typeof QueueRoute
   '/revenue': typeof RevenueRoute
@@ -510,6 +526,8 @@ export interface FileRoutesById {
   '/inventory': typeof InventoryRoute
   '/leaderboard': typeof LeaderboardRoute
   '/leads': typeof LeadsRouteWithChildren
+  '/live-leads': typeof LiveLeadsRoute
+  '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
   '/queue': typeof QueueRoute
   '/revenue': typeof RevenueRoute
@@ -574,6 +592,8 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/leaderboard'
     | '/leads'
+    | '/live-leads'
+    | '/login'
     | '/manager'
     | '/queue'
     | '/revenue'
@@ -636,6 +656,8 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/leaderboard'
     | '/leads'
+    | '/live-leads'
+    | '/login'
     | '/manager'
     | '/queue'
     | '/revenue'
@@ -698,6 +720,8 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/leaderboard'
     | '/leads'
+    | '/live-leads'
+    | '/login'
     | '/manager'
     | '/queue'
     | '/revenue'
@@ -761,6 +785,8 @@ export interface RootRouteChildren {
   InventoryRoute: typeof InventoryRoute
   LeaderboardRoute: typeof LeaderboardRoute
   LeadsRoute: typeof LeadsRouteWithChildren
+  LiveLeadsRoute: typeof LiveLeadsRoute
+  LoginRoute: typeof LoginRoute
   ManagerRoute: typeof ManagerRoute
   QueueRoute: typeof QueueRoute
   RevenueRoute: typeof RevenueRoute
@@ -869,6 +895,20 @@ declare module '@tanstack/react-router' {
       path: '/manager'
       fullPath: '/manager'
       preLoaderRoute: typeof ManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live-leads': {
+      id: '/live-leads'
+      path: '/live-leads'
+      fullPath: '/live-leads'
+      preLoaderRoute: typeof LiveLeadsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leads': {
@@ -1280,6 +1320,8 @@ const rootRouteChildren: RootRouteChildren = {
   InventoryRoute: InventoryRoute,
   LeaderboardRoute: LeaderboardRoute,
   LeadsRoute: LeadsRouteWithChildren,
+  LiveLeadsRoute: LiveLeadsRoute,
+  LoginRoute: LoginRoute,
   ManagerRoute: ManagerRoute,
   QueueRoute: QueueRoute,
   RevenueRoute: RevenueRoute,
