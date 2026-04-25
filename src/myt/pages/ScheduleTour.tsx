@@ -7,6 +7,7 @@ import { Tour, BookingSource, TourType, WillBookToday, DecisionMaker, TourQualif
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { scoreTour, inferConfirmationStrength, intentBg } from '@/myt/lib/confidence';
@@ -14,15 +15,23 @@ import { autoAssignTcm } from '@/myt/lib/auto-assign';
 import { createBlockForTour } from '@/myt/lib/blocks';
 import { ConfidenceBar } from '@/myt/components/ConfidenceBar';
 import { SlotPicker, getTakenSlotsForDate } from '@/myt/components/SlotPicker';
-import { Building2, Video, Briefcase, Sparkles } from 'lucide-react';
+import { Building2, Video, Briefcase, Sparkles, Bug, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendTourMessage, logTourEvent } from '@/myt/lib/tour-messages';
 import { useLocation } from '@/shims/react-router-dom';
 import { useIdentityStore } from '@/lib/lead-identity/store';
+import { availableBedsForProperty, bestInventoryFits, detectAreaZone } from '@/myt/lib/inventory-intelligence';
 import type { InventoryFit } from '@/myt/lib/inventory-intelligence';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 const in7days = () => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; };
+const parseBudgetAmount = (value: unknown) => {
+  const raw = String(value ?? '').toLowerCase().replace(/,/g, ' ');
+  const matches = [...raw.matchAll(/(\d+(?:\.\d+)?)\s*(k|000)?/g)]
+    .map((m) => Math.round(Number(m[1]) * (m[2] === 'k' ? 1000 : m[2] === '000' ? 1000 : Number(m[1]) <= 80 ? 1000 : 1)))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return matches.length ? Math.max(...matches) : 0;
+};
 
 const roomTypes = ['Single', 'Double Sharing', 'Triple Sharing', 'Studio'];
 
@@ -36,6 +45,10 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
   const location = useLocation();
   const setLifecycleState = useIdentityStore((s) => s.setLifecycleState);
   const currentTcmName = storeTcms.find((t) => t.id === currentTcmId)?.name;
+  const routeState = useMemo(() => location.state as { lead?: Record<string, unknown>; pastedLead?: Record<string, unknown>; inventoryFit?: InventoryFit } | null, [location.state]);
+  const incomingLead = routeState?.lead;
+  const pastedLead = routeState?.pastedLead;
+  const incomingFit = routeState?.inventoryFit;
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState({
@@ -73,17 +86,16 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
   }, [role, currentTcmName, form.assignedTo]);
 
   useEffect(() => {
-    const routeState = location.state as { lead?: Record<string, unknown>; inventoryFit?: InventoryFit } | null;
-    const stateLead = routeState?.lead;
+    const stateLead = incomingLead;
     if (!stateLead) return;
-    const leadName = String(stateLead.name ?? '');
-    const phone = String(stateLead.phone ?? stateLead.phoneRaw ?? stateLead.phoneE164 ?? '');
-    const moveIn = String(stateLead.moveInDate ?? '');
-    const budget = String(stateLead.budget ?? '12000').replace(/\D/g, '') || '12000';
-    const area = String(stateLead.area ?? stateLead.location ?? stateLead.fullAddress ?? '');
-    const room = String(stateLead.room ?? stateLead.roomType ?? 'Single').toLowerCase();
-    const type = String(stateLead.type ?? '');
-    const notes = String(stateLead.notes ?? stateLead.extraContent ?? '');
+    const leadName = String(stateLead.name ?? pastedLead?.name ?? '');
+    const phone = String(stateLead.phone ?? stateLead.phoneRaw ?? stateLead.phoneE164 ?? pastedLead?.phone ?? '');
+    const moveIn = String(pastedLead?.moveInDate ?? stateLead.moveInDate ?? '');
+    const budget = String(parseBudgetAmount(pastedLead?.budget ?? stateLead.budget) || 12000);
+    const area = String(pastedLead?.area ?? pastedLead?.location ?? pastedLead?.fullAddress ?? stateLead.area ?? stateLead.location ?? stateLead.fullAddress ?? '');
+    const room = String(pastedLead?.room ?? stateLead.room ?? stateLead.roomType ?? 'Single').toLowerCase();
+    const type = String(pastedLead?.type ?? stateLead.type ?? '');
+    const notes = String(pastedLead?.specialReqs ?? pastedLead?.extraContent ?? stateLead.notes ?? stateLead.extraContent ?? '');
     setForm((f) => ({
       ...f,
       leadName: leadName || f.leadName,
@@ -94,11 +106,11 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
       occupation: type || f.occupation,
       roomType: room.includes('private') ? 'Single' : room.includes('shared') ? 'Double Sharing' : f.roomType,
       keyConcern: notes || f.keyConcern,
-      zoneId: routeState?.inventoryFit?.zoneId || f.zoneId,
-      propertyName: routeState?.inventoryFit?.propertyName || f.propertyName,
-      assignedTo: routeState?.inventoryFit ? '' : f.assignedTo,
+      zoneId: incomingFit?.zoneId || f.zoneId,
+      propertyName: incomingFit?.propertyName || f.propertyName,
+      assignedTo: incomingFit ? '' : f.assignedTo,
     }));
-  }, [location.state]);
+  }, [incomingLead, pastedLead, incomingFit]);
 
   const qualification: TourQualification = useMemo(() => ({
     moveInDate: form.moveInDate,
@@ -208,6 +220,18 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
 
   const select = "w-full h-10 bg-surface-2 border border-border rounded-md px-3 text-sm text-foreground";
   const labelCls = "text-muted-foreground text-[11px] uppercase tracking-wide";
+  const debugAreaText = String(pastedLead?.area ?? pastedLead?.location ?? pastedLead?.fullAddress ?? incomingLead?.area ?? incomingLead?.location ?? form.workLocation ?? '');
+  const detectedArea = debugAreaText ? detectAreaZone(debugAreaText) : zones.find((z) => z.id === form.zoneId);
+  const debugBudget = parseBudgetAmount(pastedLead?.budget ?? incomingLead?.budget ?? form.budget);
+  const selectedProperty = allProperties.find((p) => p.name === form.propertyName || p.id === incomingFit?.propertyId);
+  const selectedInventory = selectedProperty ? availableBedsForProperty(selectedProperty.id, rooms, blocks) : null;
+  const calculatedFits = useMemo(() => (
+    debugAreaText ? bestInventoryFits({ areaText: debugAreaText, budget: debugBudget, room: String(pastedLead?.room ?? incomingLead?.room ?? form.roomType), rooms, blocks, limit: 3 }) : []
+  ), [debugAreaText, debugBudget, pastedLead, incomingLead, form.roomType, rooms, blocks]);
+  const debugLinks = [
+    ...((pastedLead?.links as string[] | undefined) ?? []),
+    ...String(pastedLead?.fullAddress ?? incomingLead?.fullAddress ?? '').match(/https?:\/\/\S+/g) ?? [],
+  ];
 
   return (
     <div className="space-y-4 animate-slide-up max-w-3xl">
@@ -239,6 +263,33 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
           <div className="text-[11px] text-muted-foreground">{(location.state as { inventoryFit?: InventoryFit }).inventoryFit?.reason}</div>
         </div>
       )}
+
+      <div className="rounded-lg border border-border bg-surface-2/60 p-3 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Bug className="h-4 w-4 text-primary" /> Inventory-fit debug
+          </div>
+          <Badge variant="secondary" className="text-[10px]">{incomingFit ? 'Quick Add match' : 'Live match'}</Badge>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+          <DebugMetric label="Area input" value={debugAreaText || '—'} />
+          <DebugMetric label="Detected area" value={detectedArea?.area ?? '—'} />
+          <DebugMetric label="Budget" value={debugBudget ? `₹${debugBudget.toLocaleString('en-IN')}` : '—'} />
+          <DebugMetric label="Available beds" value={String(incomingFit?.availableBeds ?? selectedInventory?.beds ?? calculatedFits[0]?.availableBeds ?? 0)} />
+        </div>
+        <div className="grid gap-1.5">
+          {(calculatedFits.length ? calculatedFits : incomingFit ? [incomingFit] : []).slice(0, 3).map((fit) => (
+            <div key={fit.propertyId} className="flex items-center justify-between gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5 text-[11px]">
+              <span className="truncate font-medium text-foreground">{fit.propertyName}</span>
+              <span className="shrink-0 text-muted-foreground">{fit.availableBeds} beds · {fit.priceFit} · score {fit.score}</span>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+          <div className="flex items-start gap-1.5"><MapPin className="h-3 w-3 mt-0.5 text-primary" /> From here: {selectedProperty ? `${selectedProperty.address} → ${debugAreaText || 'lead location'}` : 'select property to compare'}</div>
+          <div className="flex items-start gap-1.5"><MapPin className="h-3 w-3 mt-0.5 text-primary" /> From there: {debugLinks[0] ? `map link captured (${debugLinks.length})` : 'no map link captured yet'}</div>
+        </div>
+      </div>
 
       {/* Stepper */}
       <div className="flex gap-1.5">
@@ -466,6 +517,15 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DebugMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border bg-background/70 px-2 py-1.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5 truncate font-medium text-foreground">{value}</div>
     </div>
   );
 }
