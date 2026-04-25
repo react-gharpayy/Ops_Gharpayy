@@ -70,7 +70,19 @@ export function LeadCapturePipPanel() {
       name, phone, email, location: areas,
       areas: areas.split(",").map((a) => a.trim()).filter(Boolean),
       fullAddress, budget, moveIn, type, room, need,
-      specialReqs: notes, extraContent: extra, links, inBLR: null, zone, rawSource: raw || `[PiP Capture] ${name}`,
+      specialReqs: notes,
+      extraContent: extra,
+      links,
+      geoIntel: {
+        query: [areas, fullAddress].filter(Boolean).join(" · "),
+        zone,
+        areas: areas.split(",").map((a) => a.trim()).filter(Boolean),
+        links,
+        confidence: links.length || areas.includes(",") ? "high" : areas ? "medium" : "low",
+        distanceHint: links.length ? "Map link attached for distance check" : areas ? "Area ready, exact map link pending" : "Needs location before distance check",
+        syncStatus: areas || links.length ? links.length ? "ready" : "needs-map-link" : "needs-location",
+      },
+      inBLR: null, zone, rawSource: raw || `[PiP Capture] ${name}`,
     }, { stage: "MYT [TENANT]", quality: budget ? "good" : null });
     toast.success("Lead added");
     if (keepOpen) reset();
