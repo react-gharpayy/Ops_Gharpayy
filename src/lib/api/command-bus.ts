@@ -18,7 +18,7 @@ export async function dispatch(input: Omit<Cmd, "_id" | "issuedAt"> & Partial<Pi
     return { ok: false, error: `Client validation failed: ${parsed.error.message}` };
   }
   try {
-    return await api.command<DispatchResult>(parsed.data as unknown as { _id: string } & Record<string, unknown>);
+    return await api.command<DispatchResult>(parsed.data as unknown as { _id: string; type: string; payload: Record<string, unknown> } & Record<string, unknown>);
   } catch (e) {
     const err = e as Error;
     return { ok: false, error: err.message };
