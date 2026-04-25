@@ -6,11 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, Plus, Phone, ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle, XCircle, Plus, Phone, ArrowRight, Sparkles, PictureInPicture2, FlaskConical, Zap, Info } from 'lucide-react';
 import { useNavigate } from '@/shims/react-router-dom';
 import { PasteToLead } from '@/components/leads/PasteToLead';
 import { RequestAccessSheet } from '@/components/leads/RequestAccessSheet';
 import { useIdentityStore } from '@/lib/lead-identity/store';
+import { ParserTestModal } from '@/components/leads/ParserTestModal';
+import { QuickAddLeadPanel } from '@/components/leads/QuickAddLeadPanel';
+import { usePip } from '@/components/pip/PipProvider';
 
 export default function MYTLeadTracker() {
   const { leads, setLeads, currentMemberId } = useAppState();
