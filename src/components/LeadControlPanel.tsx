@@ -717,6 +717,50 @@ function UpcomingTourCard({
   );
 }
 
+function InlineScheduleTour({
+  leadName, properties, tcms, propertyId, tcmId, scheduledAt,
+  onPropertyChange, onTcmChange, onScheduledAtChange, onSchedule,
+}: {
+  leadName: string;
+  properties: import("@/lib/types").Property[];
+  tcms: import("@/lib/types").TCM[];
+  propertyId: string;
+  tcmId: string;
+  scheduledAt: string;
+  onPropertyChange: (value: string) => void;
+  onTcmChange: (value: string) => void;
+  onScheduledAtChange: (value: string) => void;
+  onSchedule: () => void;
+}) {
+  return (
+    <Section title="Schedule Tour in drawer">
+      <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+        <div className="text-xs text-muted-foreground">Lead is already known: <span className="font-medium text-foreground">{leadName}</span>. Add as many Tours as needed without re-entering phone or QuickAD answers.</div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Property</Label>
+            <Select value={propertyId} onValueChange={onPropertyChange}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select property" /></SelectTrigger>
+              <SelectContent>{properties.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} · {p.area}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">TCM</Label>
+            <Select value={tcmId} onValueChange={onTcmChange}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select TCM" /></SelectTrigger>
+              <SelectContent>{tcms.map((t) => <SelectItem key={t.id} value={t.id}>{t.name} · {t.zone}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <Input type="datetime-local" value={scheduledAt} onChange={(e) => onScheduledAtChange(e.target.value)} className="h-9 text-sm" />
+          <Button size="sm" onClick={onSchedule} className="gap-1.5"><CalendarIcon className="h-3.5 w-3.5" /> Schedule Tour</Button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 function toLocal(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
