@@ -27,7 +27,7 @@ import {
   Wallet, Send, Zap, IndianRupee, BellRing, ExternalLink, Plus,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import type { LeadStage, FollowUpPriority, SequenceKind } from "@/lib/types";
+import type { Lead, LeadStage, FollowUpPriority, SequenceKind } from "@/lib/types";
 import { toast } from "sonner";
 import { useMountedNow } from "@/hooks/use-now";
 import { sendTourMessage as sendOwnerTourMessage } from "@/owner/messaging";
@@ -71,6 +71,7 @@ export function LeadControlPanel() {
   const [propertyId, setPropertyId] = useState("");
   const [tcmId, setTcmId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [isSchedulingAnother, setIsSchedulingAnother] = useState(false);
   const [tab, setTab] = useState("control");
   const [, mounted] = useMountedNow();
 
@@ -88,6 +89,7 @@ export function LeadControlPanel() {
     setPropertyId(upcomingTour?.propertyId ?? "");
     setTcmId(upcomingTour?.tcmId ?? lead.assignedTcmId ?? "");
     setScheduledAt(upcomingTour ? toLocal(upcomingTour.scheduledAt) : "");
+    setIsSchedulingAnother(false);
     setTab(pendingPostTour ? "post" : upcomingTour ? "tour" : settings.matching.drawerDefaultTab);
   }, [lead, pendingPostTour, upcomingTour, settings.matching.drawerDefaultTab]);
 
@@ -102,6 +104,7 @@ export function LeadControlPanel() {
     }
     scheduleTour({ leadId: lead.id, propertyId, tcmId, scheduledAt: new Date(scheduledAt).toISOString() });
     setPropertyId(""); setTcmId(""); setScheduledAt("");
+    setIsSchedulingAnother(false);
     toast.success("Tour scheduled");
   };
 
@@ -109,6 +112,7 @@ export function LeadControlPanel() {
     setPropertyId("");
     setTcmId(lead.assignedTcmId ?? "");
     setScheduledAt("");
+    setIsSchedulingAnother(true);
     setTab("tour");
   };
 
@@ -404,9 +408,11 @@ export function LeadControlPanel() {
                      }}
                   />
                 </Section>
-              ) : (
+              ) : null}
+
+              {(!upcomingTour || isSchedulingAnother) ? (
                 <InlineScheduleTour
-                  leadName={lead.name}
+                  lead={lead}
                   properties={properties}
                   tcms={tcms}
                   propertyId={propertyId}
@@ -417,7 +423,7 @@ export function LeadControlPanel() {
                   onScheduledAtChange={setScheduledAt}
                   onSchedule={handleSchedule}
                 />
-              )}
+              ) : null}
 
               {leadTours.length > 1 && (
                 <Section title="Tour history">
@@ -718,10 +724,10 @@ function UpcomingTourCard({
 }
 
 function InlineScheduleTour({
-  leadName, properties, tcms, propertyId, tcmId, scheduledAt,
+  lead, properties, tcms, propertyId, tcmId, scheduledAt,
   onPropertyChange, onTcmChange, onScheduledAtChange, onSchedule,
 }: {
-  leadName: string;
+  lead: Lead;
   properties: import("@/lib/types").Property[];
   tcms: import("@/lib/types").TCM[];
   propertyId: string;
@@ -735,7 +741,12 @@ function InlineScheduleTour({
   return (
     <Section title="Schedule Tour in drawer">
       <div className="rounded-lg border border-border bg-card p-3 space-y-3">
-        <div className="text-xs text-muted-foreground">Lead is already known: <span className="font-medium text-foreground">{leadName}</span>. Add as many Tours as needed without re-entering phone or QuickAD answers.</div>
+        <div className="text-xs text-muted-foreground">Lead is already known: <span className="font-medium text-foreground">{lead.name}</span>. Add any property Tour without re-entering phone or QuickAD answers.</div>
+        <div className="grid grid-cols-3 gap-2 text-[11px]">
+          <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Phone</span><span className="font-medium text-foreground">{lead.phone}</span></div>
+          <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Budget</span><span className="font-medium text-foreground">₹{(lead.budget / 1000).toFixed(0)}k</span></div>
+          <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Area</span><span className="font-medium text-foreground">{lead.preferredArea}</span></div>
+        </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Property</Label>
