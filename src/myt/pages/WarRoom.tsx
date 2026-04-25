@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 import { useAppState } from '@/myt/lib/app-context';
-import { properties as allProperties } from '@/myt/lib/properties-seed';
-import { scoreProperty } from '@/myt/lib/scoring';
 import { zones } from '@/myt/lib/mock-data';
 import { TrendingUp, AlertTriangle, Target, Zap, Crosshair } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, BarChart, Bar, Cell } from 'recharts';

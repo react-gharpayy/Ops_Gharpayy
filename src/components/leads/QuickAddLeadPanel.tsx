@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "@/shims/react-router-dom";
 import { useAppState } from "@/myt/lib/app-context";
 import { bestInventoryFits, detectAreaZone, recommendedFlowOps, recommendedTcm } from "@/myt/lib/inventory-intelligence";
+import { QUICKAD_NEED_OPTIONS, QUICKAD_ROOM_OPTIONS, QUICKAD_TYPE_OPTIONS, parseBudgetAmount } from "@/lib/quickad-shared";
 import type { ParsedLeadDraft } from "@/lib/lead-identity/types";
 
 interface Props { open: boolean; onClose: () => void; }
@@ -50,9 +51,9 @@ const STAGES = [
   "LOST 😭",
 ] as const;
 
-const TYPE_OPTS = ["Student", "Working", "Intern", "Family", "Other"];
-const ROOM_OPTS = ["Private", "Shared", "Both", "Studio"];
-const NEED_OPTS = ["Boys", "Girls", "Coed"];
+const TYPE_OPTS = QUICKAD_TYPE_OPTIONS;
+const ROOM_OPTS = QUICKAD_ROOM_OPTIONS;
+const NEED_OPTS = QUICKAD_NEED_OPTIONS;
 const QUALITY_OPTS = [
   { v: "hot" as const, label: "🔥 Hot" },
   { v: "good" as const, label: "✅ Good" },
@@ -63,14 +64,6 @@ const BLR_OPTS = [
   { v: false as const, label: "✈️ Out" },
   { v: null, label: "❓ Unknown" },
 ];
-
-const parseBudgetAmount = (value: string | number | undefined) => {
-  const raw = String(value ?? "").toLowerCase().replace(/,/g, " ");
-  const matches = [...raw.matchAll(/(\d+(?:\.\d+)?)\s*(k|000)?/g)]
-    .map((m) => Math.round(Number(m[1]) * (m[2] === "k" ? 1000 : m[2] === "000" ? 1000 : Number(m[1]) <= 80 ? 1000 : 1)))
-    .filter((n) => Number.isFinite(n) && n > 0);
-  return matches.length ? Math.max(...matches) : 0;
-};
 
 export function QuickAddLeadPanel({ open, onClose }: Props) {
   const checkDup = useIdentityStore((s) => s.checkDuplicates);
@@ -154,6 +147,12 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
 
   const scheduleDraft = () => {
     if (!name.trim() || !phone.trim()) { toast.error("Need name and phone before scheduling"); return; }
+    const dup = checkDup({ name, phone, email, location: areasText });
+    const existing = dup.candidates[0]?.lead;
+    if (existing && (dup.type === "exact" || dup.type === "strong")) {
+      scheduleExisting(existing);
+      return;
+    }
     onClose();
     navigate("/myt/schedule", {
       state: {
@@ -268,7 +267,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Area Inventory Fit</div>
-                  <div className="text-sm font-semibold text-foreground">{areaFit.zone.area} · {areaFit.fits[0]?.availableBeds ?? 0} beds live</div>
+          <div className="text-sm font-semibold text-foreground">{areaFit.zone.area} · {areaFit.fits[0]?.availableBeds ?? 0} Supply Hub beds live</div>
                 </div>
                 <Button type="button" size="sm" variant="secondary" className="h-7 text-[11px]" onClick={scheduleDraft} disabled={!areaFit.fits[0]}>
                   <CalendarPlus className="h-3 w-3 mr-1" /> Best Tour
@@ -278,7 +277,7 @@ export function QuickAddLeadPanel({ open, onClose }: Props) {
                 {areaFit.fits.slice(0, 2).map((fit, i) => (
                   <div key={fit.propertyId} className="rounded border border-border bg-background/70 px-2 py-1.5 text-[11px] flex items-center justify-between gap-2">
                     <span className="font-medium truncate">{i === 0 ? 'Best' : 'Normal'} · {fit.propertyName}</span>
-                    <span className="text-muted-foreground shrink-0">{fit.availableBeds} beds · ₹{(fit.basePrice / 1000).toFixed(0)}k · {fit.score}</span>
+                    <span className="text-muted-foreground shrink-0">{fit.availableBeds} beds · {fit.distanceKm !== null ? `${fit.distanceKm} km` : fit.area} · ₹{(fit.basePrice / 1000).toFixed(0)}k · {fit.score}</span>
                   </div>
                 ))}
               </div>

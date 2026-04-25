@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DuplicateModal } from "./DuplicateModal";
+import { QUICKAD_NEED_OPTIONS, QUICKAD_ROOM_OPTIONS, QUICKAD_TYPE_OPTIONS } from "@/lib/quickad-shared";
 
 interface Props {
   onCreated?: (lead: UnifiedLead) => void;
@@ -25,9 +26,9 @@ const emptyDraft = (): ParsedLeadDraft => ({
   type: "", room: "", need: "", specialReqs: "", inBLR: null, zone: "", rawSource: "",
 });
 
-const TYPE_OPTIONS = ["Student", "Working professional", "Intern", "Family", "Other"];
-const ROOM_OPTIONS = ["Private", "Shared (2)", "Shared (3+)", "Studio", "Any"];
-const NEED_OPTIONS = ["Boys", "Girls", "Coed", "Any"];
+const TYPE_OPTIONS = QUICKAD_TYPE_OPTIONS;
+const ROOM_OPTIONS = QUICKAD_ROOM_OPTIONS;
+const NEED_OPTIONS = QUICKAD_NEED_OPTIONS;
 
 // Light validators
 const phoneOk = (v: string) => v.replace(/\D/g, "").length >= 10;

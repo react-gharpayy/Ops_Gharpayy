@@ -6,13 +6,12 @@ import { CalendarCheck, TrendingUp, FileText, Target } from 'lucide-react';
 import { Tour } from '@/myt/lib/types';
 import { GlueFeed } from '@/components/GlueFeed';
 import { CoachInline } from '@/components/CoachInline';
-import { bestInventoryFits, availableBedsForProperty } from '@/myt/lib/inventory-intelligence';
-import { rooms as seedRooms, initialBlocks, properties as seedProperties } from '@/myt/lib/properties-seed';
+import { bestInventoryFits, availableBedsForProperty, supplyHubProperties } from '@/myt/lib/inventory-intelligence';
 
 const intentRank: Record<Tour['intent'], number> = { hard: 0, medium: 1, soft: 2 };
 
 export default function TCMDashboard() {
-  const { tours, setTours, currentMemberId } = useAppState();
+  const { tours, setTours, currentMemberId, rooms, blocks } = useAppState();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -69,9 +68,9 @@ export default function TCMDashboard() {
         </div>
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
           {sortedTours.slice(0, 3).map((tour) => {
-            const fit = bestInventoryFits({ areaText: tour.area, budget: tour.budget, rooms: seedRooms, blocks: initialBlocks, limit: 1 })[0];
-            const prop = seedProperties.find((p) => p.name === tour.propertyName) ?? (fit ? seedProperties.find((p) => p.id === fit.propertyId) : undefined);
-            const inv = prop ? availableBedsForProperty(prop.id, seedRooms, initialBlocks) : null;
+            const fit = bestInventoryFits({ areaText: tour.area, budget: tour.budget, rooms, blocks, limit: 1 })[0];
+            const prop = supplyHubProperties.find((p) => p.name === tour.propertyName) ?? (fit ? supplyHubProperties.find((p) => p.id === fit.propertyId) : undefined);
+            const inv = prop ? availableBedsForProperty(prop.id, rooms, blocks) : null;
             return (
               <div key={tour.id} className="rounded-lg border border-border bg-surface-2/40 p-3">
                 <div className="text-sm font-semibold truncate">{tour.leadName}</div>

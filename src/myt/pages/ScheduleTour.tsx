@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAppState } from '@/myt/lib/app-context';
 import { useApp } from '@/lib/store';
 import { zones, teamMembers } from '@/myt/lib/mock-data';
-import { properties as allProperties } from '@/myt/lib/properties-seed';
 import { Tour, BookingSource, TourType, WillBookToday, DecisionMaker, TourQualification } from '@/myt/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,19 +19,12 @@ import { cn } from '@/lib/utils';
 import { sendTourMessage, logTourEvent } from '@/myt/lib/tour-messages';
 import { useLocation } from '@/shims/react-router-dom';
 import { useIdentityStore } from '@/lib/lead-identity/store';
-import { availableBedsForProperty, bestInventoryFits, detectAreaZone } from '@/myt/lib/inventory-intelligence';
+import { availableBedsForProperty, bestInventoryFits, detectAreaZone, supplyHubProperties } from '@/myt/lib/inventory-intelligence';
 import type { InventoryFit } from '@/myt/lib/inventory-intelligence';
+import { normalizeRoomForTour, parseBudgetAmount } from '@/lib/quickad-shared';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 const in7days = () => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; };
-const parseBudgetAmount = (value: unknown) => {
-  const raw = String(value ?? '').toLowerCase().replace(/,/g, ' ');
-  const matches = [...raw.matchAll(/(\d+(?:\.\d+)?)\s*(k|000)?/g)]
-    .map((m) => Math.round(Number(m[1]) * (m[2] === 'k' ? 1000 : m[2] === '000' ? 1000 : Number(m[1]) <= 80 ? 1000 : 1)))
-    .filter((n) => Number.isFinite(n) && n > 0);
-  return matches.length ? Math.max(...matches) : 0;
-};
-
 const roomTypes = ['Single', 'Double Sharing', 'Triple Sharing', 'Studio'];
 
 interface ScheduleTourProps {
@@ -104,7 +96,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
       budget,
       workLocation: area || f.workLocation,
       occupation: type || f.occupation,
-      roomType: room.includes('private') ? 'Single' : room.includes('shared') ? 'Double Sharing' : f.roomType,
+      roomType: normalizeRoomForTour(room || f.roomType),
       keyConcern: notes || f.keyConcern,
       zoneId: incomingFit?.zoneId || f.zoneId,
       propertyName: incomingFit?.propertyName || f.propertyName,
@@ -191,7 +183,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
     if (ulid) setLifecycleState(ulid, 'visit-scheduled');
 
     // Auto room block based on intent
-    const matchingProp = allProperties.find(p => p.name === form.propertyName && p.zoneId === form.zoneId);
+    const matchingProp = supplyHubProperties.find(p => p.name === form.propertyName && p.zoneId === form.zoneId);
     if (matchingProp) {
       const tourWithProp = { ...newTour, propertyId: matchingProp.id };
       const block = createBlockForTour(tourWithProp, rooms, blocks);
@@ -223,7 +215,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
   const debugAreaText = String(pastedLead?.area ?? pastedLead?.location ?? pastedLead?.fullAddress ?? incomingLead?.area ?? incomingLead?.location ?? form.workLocation ?? '');
   const detectedArea = debugAreaText ? detectAreaZone(debugAreaText) : zones.find((z) => z.id === form.zoneId);
   const debugBudget = parseBudgetAmount(pastedLead?.budget ?? incomingLead?.budget ?? form.budget);
-  const selectedProperty = allProperties.find((p) => p.name === form.propertyName || p.id === incomingFit?.propertyId);
+  const selectedProperty = supplyHubProperties.find((p) => p.name === form.propertyName || p.id === incomingFit?.propertyId);
   const selectedInventory = selectedProperty ? availableBedsForProperty(selectedProperty.id, rooms, blocks) : null;
   const calculatedFits = useMemo(() => (
     debugAreaText ? bestInventoryFits({ areaText: debugAreaText, budget: debugBudget, room: String(pastedLead?.room ?? incomingLead?.room ?? form.roomType), rooms, blocks, limit: 3 }) : []
@@ -475,7 +467,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
               <Label className={labelCls}>Property</Label>
               <select value={form.propertyName} onChange={e => setForm(f => ({ ...f, propertyName: e.target.value }))} className={select}>
                 <option value="">Select property…</option>
-                {allProperties.filter(p => p.zoneId === form.zoneId).map(p => (
+                {supplyHubProperties.filter(p => p.zoneId === form.zoneId).map(p => (
                   <option key={p.id} value={p.name}>{p.name} · ₹{(p.basePrice/1000).toFixed(0)}k</option>
                 ))}
               </select>
