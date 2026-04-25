@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/owner/blocks", label: "Approvals", icon: Inbox },
       { to: "/owner/rooms", label: "Rooms", icon: Building2 },
       { to: "/owner/inventory", label: "Inventory", icon: Layers },
-      { to: "/owner/visits", label: "Visits", icon: Camera },
+      { to: "/owner/visits", label: "Tours", icon: Camera },
       { to: "/owner/insights", label: "Insights", icon: IndianRupee },
     ],
   };
