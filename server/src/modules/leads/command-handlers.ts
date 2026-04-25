@@ -50,6 +50,12 @@ export async function dispatch(rawCmd: Command, user: JwtClaims) {
 }
 
 async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["result"]> {
+  // Delegate todo commands
+  if (cmd.type.startsWith("cmd.todo.")) {
+    const { applyTodoCommand } = await import("../todos/command-handlers.js");
+    return applyTodoCommand(cmd, user);
+  }
+
   const now = new Date().toISOString();
   const correlationId = cmd._id;
 

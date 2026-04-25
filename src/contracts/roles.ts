@@ -28,13 +28,17 @@ export const Scope = z.enum([
   "inventory.block",
   "automation.admin",
   "user.admin",
+  "todo.read",
+  "todo.create",
+  "todo.update",
+  "todo.assign",
 ]);
 export type Scope = z.infer<typeof Scope>;
 
 // Default scope grants per top-role. Server is authoritative; this matches it.
 export const DEFAULT_SCOPES: Record<TopRole, Scope[]> = {
   admin: Scope.options,
-  sales: ["lead.read", "lead.create", "lead.update", "lead.claim", "tour.read", "tour.schedule", "tour.complete", "inventory.read"],
-  ops: ["lead.read", "lead.assign", "tour.read", "inventory.read", "inventory.block"],
-  owner: ["inventory.read"],
+  sales: ["lead.read", "lead.create", "lead.update", "lead.claim", "tour.read", "tour.schedule", "tour.complete", "inventory.read", "todo.read", "todo.create", "todo.update", "todo.assign"],
+  ops: ["lead.read", "lead.assign", "tour.read", "inventory.read", "inventory.block", "todo.read", "todo.create", "todo.update", "todo.assign"],
+  owner: ["inventory.read", "todo.read", "todo.create", "todo.update"],
 };

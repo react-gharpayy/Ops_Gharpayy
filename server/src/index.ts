@@ -8,6 +8,7 @@ import { redis } from "./db/redis.js";
 import { attachSocketIO } from "./realtime/socket.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerLeadsRoutes } from "./modules/leads/routes.js";
+import { registerTodosRoutes } from "./modules/todos/routes.js";
 
 async function main() {
   const app = Fastify({
@@ -28,6 +29,7 @@ async function main() {
 
   registerAuthRoutes(app);
   registerLeadsRoutes(app);
+  registerTodosRoutes(app);
 
   await attachSocketIO(app);
 

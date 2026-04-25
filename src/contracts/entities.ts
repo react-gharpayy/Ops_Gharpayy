@@ -35,3 +35,43 @@ export const Lead = z.object({
   tenantId: z.string(),
 });
 export type Lead = z.infer<typeof Lead>;
+
+// ------------------- TODO ENTITY -------------------
+// A todo can be standalone (entityType = "none") OR attached to any entity.
+export const TodoEntityType = z.enum(["none", "lead", "tour", "deal", "owner", "unit"]);
+export type TodoEntityType = z.infer<typeof TodoEntityType>;
+
+export const TodoStatus = z.enum([
+  "open",          // created, awaiting acceptance if assigned
+  "pending-accept",// assigned to someone other than creator, not yet accepted
+  "accepted",      // assignee accepted, now actively owned
+  "in-progress",   // marked started
+  "done",
+  "declined",      // assignee declined; bounces back to creator
+  "cancelled",
+]);
+export type TodoStatus = z.infer<typeof TodoStatus>;
+
+export const TodoPriority = z.enum(["low", "med", "high", "urgent"]);
+
+export const Todo = z.object({
+  _id: z.string(),                                     // ULID
+  title: z.string().min(1).max(200),
+  notes: z.string().max(2000).default(""),
+  // Attachment to a parent entity (or "none" for standalone My Tasks)
+  entityType: TodoEntityType.default("none"),
+  entityId: z.string().nullable().default(null),
+  // People
+  createdBy: z.string(),                               // userId
+  assignedTo: z.string().nullable().default(null),     // userId, null = unassigned (My Tasks for creator)
+  // State
+  status: TodoStatus.default("open"),
+  priority: TodoPriority.default("med"),
+  dueAt: z.string().nullable().default(null),          // ISO
+  completedAt: z.string().nullable().default(null),
+  // Audit
+  tenantId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Todo = z.infer<typeof Todo>;
