@@ -219,6 +219,18 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
 
   const select = "w-full h-10 bg-surface-2 border border-border rounded-md px-3 text-sm text-foreground";
   const labelCls = "text-muted-foreground text-[11px] uppercase tracking-wide";
+  const debugAreaText = String(pastedLead?.area ?? pastedLead?.location ?? pastedLead?.fullAddress ?? incomingLead?.area ?? incomingLead?.location ?? form.workLocation ?? '');
+  const detectedArea = debugAreaText ? detectAreaZone(debugAreaText) : zones.find((z) => z.id === form.zoneId);
+  const debugBudget = parseBudgetAmount(pastedLead?.budget ?? incomingLead?.budget ?? form.budget);
+  const selectedProperty = allProperties.find((p) => p.name === form.propertyName || p.id === incomingFit?.propertyId);
+  const selectedInventory = selectedProperty ? availableBedsForProperty(selectedProperty.id, rooms, blocks) : null;
+  const calculatedFits = useMemo(() => (
+    debugAreaText ? bestInventoryFits({ areaText: debugAreaText, budget: debugBudget, room: String(pastedLead?.room ?? incomingLead?.room ?? form.roomType), rooms, blocks, limit: 3 }) : []
+  ), [debugAreaText, debugBudget, pastedLead, incomingLead, form.roomType, rooms, blocks]);
+  const debugLinks = [
+    ...((pastedLead?.links as string[] | undefined) ?? []),
+    ...String(pastedLead?.fullAddress ?? incomingLead?.fullAddress ?? '').match(/https?:\/\/\S+/g) ?? [],
+  ];
 
   return (
     <div className="space-y-4 animate-slide-up max-w-3xl">
@@ -250,6 +262,33 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
           <div className="text-[11px] text-muted-foreground">{(location.state as { inventoryFit?: InventoryFit }).inventoryFit?.reason}</div>
         </div>
       )}
+
+      <div className="rounded-lg border border-border bg-surface-2/60 p-3 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Bug className="h-4 w-4 text-primary" /> Inventory-fit debug
+          </div>
+          <Badge variant="secondary" className="text-[10px]">{incomingFit ? 'Quick Add match' : 'Live match'}</Badge>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+          <DebugMetric label="Area input" value={debugAreaText || '—'} />
+          <DebugMetric label="Detected area" value={detectedArea?.area ?? '—'} />
+          <DebugMetric label="Budget" value={debugBudget ? `₹${debugBudget.toLocaleString('en-IN')}` : '—'} />
+          <DebugMetric label="Available beds" value={String(incomingFit?.availableBeds ?? selectedInventory?.beds ?? calculatedFits[0]?.availableBeds ?? 0)} />
+        </div>
+        <div className="grid gap-1.5">
+          {(calculatedFits.length ? calculatedFits : incomingFit ? [incomingFit] : []).slice(0, 3).map((fit) => (
+            <div key={fit.propertyId} className="flex items-center justify-between gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5 text-[11px]">
+              <span className="truncate font-medium text-foreground">{fit.propertyName}</span>
+              <span className="shrink-0 text-muted-foreground">{fit.availableBeds} beds · {fit.priceFit} · score {fit.score}</span>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+          <div className="flex items-start gap-1.5"><MapPin className="h-3 w-3 mt-0.5 text-primary" /> From here: {selectedProperty ? `${selectedProperty.address} → ${debugAreaText || 'lead location'}` : 'select property to compare'}</div>
+          <div className="flex items-start gap-1.5"><MapPin className="h-3 w-3 mt-0.5 text-primary" /> From there: {debugLinks[0] ? `map link captured (${debugLinks.length})` : 'no map link captured yet'}</div>
+        </div>
+      </div>
 
       {/* Stepper */}
       <div className="flex gap-1.5">
