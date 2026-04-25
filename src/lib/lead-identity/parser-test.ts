@@ -4,8 +4,37 @@
 //
 // "Usable" = at least Phone OR Email captured (we can still take action).
 // "Parsed" = Name + Phone + (Location || Budget) — production-ready row.
-import Papa from "papaparse";
 import { parseLead, detectZone } from "./parser";
+
+/** Minimal RFC-4180 CSV parser (handles quoted fields with embedded newlines and "" escapes). */
+function parseCsv(text: string): Record<string, string>[] {
+  const rows: string[][] = [];
+  let cur: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ",") { cur.push(field); field = ""; }
+      else if (c === "\n") { cur.push(field); rows.push(cur); cur = []; field = ""; }
+      else if (c === "\r") { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field.length || cur.length) { cur.push(field); rows.push(cur); }
+  if (rows.length === 0) return [];
+  const headers = rows[0];
+  return rows.slice(1).filter((r) => r.length > 1).map((r) => {
+    const o: Record<string, string> = {};
+    headers.forEach((h, i) => { o[h.trim()] = r[i] ?? ""; });
+    return o;
+  });
+}
 import type { ParsedLeadDraft } from "./types";
 
 export interface ParserTestRowResult {
