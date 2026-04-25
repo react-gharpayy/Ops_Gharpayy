@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ClipboardPaste, Save, Repeat2, Sparkles, AlertTriangle } from "lucide-react";
+import { Save, Repeat2, Sparkles, AlertTriangle, MapPin, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,9 +17,16 @@ export function LeadCapturePipPanel() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [areas, setAreas] = useState("");
+  const [email, setEmail] = useState("");
+  const [fullAddress, setFullAddress] = useState("");
   const [budget, setBudget] = useState("");
   const [moveIn, setMoveIn] = useState(todayIso());
+  const [room, setRoom] = useState("");
+  const [need, setNeed] = useState("");
+  const [type, setType] = useState("");
   const [notes, setNotes] = useState("");
+  const [extra, setExtra] = useState("");
+  const [links, setLinks] = useState<string[]>([]);
   const zone = useMemo(() => detectZone(areas), [areas]);
 
   const parse = (text = raw) => {
@@ -30,15 +37,23 @@ export function LeadCapturePipPanel() {
     }
     setName(parsed.name);
     setPhone(parsed.phone);
+    setEmail(parsed.email);
     setAreas(parsed.areas?.length ? parsed.areas.join(", ") : parsed.location);
+    setFullAddress(parsed.fullAddress);
     setBudget(parsed.budget);
     if (/^\d{4}-\d{2}-\d{2}$/.test(parsed.moveIn)) setMoveIn(parsed.moveIn);
+    else if (parsed.moveIn) setMoveIn(parsed.moveIn);
+    setType(parsed.type);
+    setRoom(parsed.room);
+    setNeed(parsed.need);
     setNotes(parsed.specialReqs || parsed.rawSource.slice(0, 160));
-    toast.success("Lead parsed");
+    setExtra(parsed.extraContent || "");
+    setLinks(parsed.links || []);
+    toast.success("Auto-parsed paste");
   };
 
   const reset = () => {
-    setRaw(""); setName(""); setPhone(""); setAreas(""); setBudget(""); setMoveIn(todayIso()); setNotes("");
+    setRaw(""); setName(""); setPhone(""); setEmail(""); setAreas(""); setFullAddress(""); setBudget(""); setMoveIn(todayIso()); setType(""); setRoom(""); setNeed(""); setNotes(""); setExtra(""); setLinks([]);
   };
 
   const save = (keepOpen: boolean) => {
@@ -52,10 +67,10 @@ export function LeadCapturePipPanel() {
       return;
     }
     createLead({
-      name, phone, email: "", location: areas,
+      name, phone, email, location: areas,
       areas: areas.split(",").map((a) => a.trim()).filter(Boolean),
-      fullAddress: "", budget, moveIn, type: "", room: "", need: "",
-      specialReqs: notes, inBLR: null, zone, rawSource: raw || `[PiP Capture] ${name}`,
+      fullAddress, budget, moveIn, type, room, need,
+      specialReqs: notes, extraContent: extra, links, inBLR: null, zone, rawSource: raw || `[PiP Capture] ${name}`,
     }, { stage: "MYT [TENANT]", quality: budget ? "good" : null });
     toast.success("Lead added");
     if (keepOpen) reset();
