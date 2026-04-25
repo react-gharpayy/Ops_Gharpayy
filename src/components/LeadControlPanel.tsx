@@ -724,10 +724,10 @@ function UpcomingTourCard({
 }
 
 function InlineScheduleTour({
-  leadName, properties, tcms, propertyId, tcmId, scheduledAt,
+  lead, properties, tcms, propertyId, tcmId, scheduledAt,
   onPropertyChange, onTcmChange, onScheduledAtChange, onSchedule,
 }: {
-  leadName: string;
+  lead: Lead;
   properties: import("@/lib/types").Property[];
   tcms: import("@/lib/types").TCM[];
   propertyId: string;
@@ -741,7 +741,12 @@ function InlineScheduleTour({
   return (
     <Section title="Schedule Tour in drawer">
       <div className="rounded-lg border border-border bg-card p-3 space-y-3">
-        <div className="text-xs text-muted-foreground">Lead is already known: <span className="font-medium text-foreground">{leadName}</span>. Add as many Tours as needed without re-entering phone or QuickAD answers.</div>
+        <div className="text-xs text-muted-foreground">Lead is already known: <span className="font-medium text-foreground">{lead.name}</span>. Add any property Tour without re-entering phone or QuickAD answers.</div>
+        <div className="grid grid-cols-3 gap-2 text-[11px]">
+          <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Phone</span><span className="font-medium text-foreground">{lead.phone}</span></div>
+          <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Budget</span><span className="font-medium text-foreground">₹{(lead.budget / 1000).toFixed(0)}k</span></div>
+          <div className="rounded-md bg-muted/60 px-2 py-1.5"><span className="block text-muted-foreground">Area</span><span className="font-medium text-foreground">{lead.preferredArea}</span></div>
+        </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Property</Label>
