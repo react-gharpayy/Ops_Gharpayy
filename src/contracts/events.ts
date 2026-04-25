@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Lead } from "./entities";
+import { Lead, Todo } from "./entities";
 
 // Event registry — every event the system can emit. Server publishes, client + workers subscribe.
 export const EventType = z.enum([
@@ -8,6 +8,14 @@ export const EventType = z.enum([
   "evt.lead.assigned",
   "evt.lead.stage_changed",
   "evt.lead.deleted",
+  // Todos
+  "evt.todo.created",
+  "evt.todo.updated",
+  "evt.todo.assigned",
+  "evt.todo.accepted",
+  "evt.todo.declined",
+  "evt.todo.completed",
+  "evt.todo.cancelled",
   // Future modules — declare now so contracts stay stable.
   "evt.tour.scheduled",
   "evt.tour.completed",
@@ -18,42 +26,66 @@ export const EventType = z.enum([
 export type EventType = z.infer<typeof EventType>;
 
 const Envelope = z.object({
-  _id: z.string(),               // event ULID
+  _id: z.string(),
   type: EventType,
   occurredAt: z.string(),
-  actor: z.string(),             // userId
+  actor: z.string(),
   tenantId: z.string(),
-  correlationId: z.string(),     // command that produced it
+  correlationId: z.string(),
   causationId: z.string().nullable().default(null),
   version: z.literal(1),
 });
 
+// ---------- Lead events ----------
 export const LeadCreatedEvt = Envelope.extend({
   type: z.literal("evt.lead.created"),
   payload: z.object({ lead: Lead }),
 });
-
 export const LeadUpdatedEvt = Envelope.extend({
   type: z.literal("evt.lead.updated"),
-  payload: z.object({
-    leadId: z.string(),
-    patch: Lead.partial(),
-  }),
+  payload: z.object({ leadId: z.string(), patch: Lead.partial() }),
 });
-
 export const LeadAssignedEvt = Envelope.extend({
   type: z.literal("evt.lead.assigned"),
   payload: z.object({ leadId: z.string(), tcmId: z.string() }),
 });
-
 export const LeadStageChangedEvt = Envelope.extend({
   type: z.literal("evt.lead.stage_changed"),
   payload: z.object({ leadId: z.string(), from: z.string(), to: z.string() }),
 });
-
 export const LeadDeletedEvt = Envelope.extend({
   type: z.literal("evt.lead.deleted"),
   payload: z.object({ leadId: z.string() }),
+});
+
+// ---------- Todo events ----------
+export const TodoCreatedEvt = Envelope.extend({
+  type: z.literal("evt.todo.created"),
+  payload: z.object({ todo: Todo }),
+});
+export const TodoUpdatedEvt = Envelope.extend({
+  type: z.literal("evt.todo.updated"),
+  payload: z.object({ todoId: z.string(), patch: Todo.partial() }),
+});
+export const TodoAssignedEvt = Envelope.extend({
+  type: z.literal("evt.todo.assigned"),
+  payload: z.object({ todoId: z.string(), assignTo: z.string(), pending: z.boolean() }),
+});
+export const TodoAcceptedEvt = Envelope.extend({
+  type: z.literal("evt.todo.accepted"),
+  payload: z.object({ todoId: z.string(), by: z.string() }),
+});
+export const TodoDeclinedEvt = Envelope.extend({
+  type: z.literal("evt.todo.declined"),
+  payload: z.object({ todoId: z.string(), by: z.string(), reason: z.string().nullable() }),
+});
+export const TodoCompletedEvt = Envelope.extend({
+  type: z.literal("evt.todo.completed"),
+  payload: z.object({ todoId: z.string(), by: z.string() }),
+});
+export const TodoCancelledEvt = Envelope.extend({
+  type: z.literal("evt.todo.cancelled"),
+  payload: z.object({ todoId: z.string(), by: z.string() }),
 });
 
 export const DomainEvent = z.discriminatedUnion("type", [
@@ -62,5 +94,12 @@ export const DomainEvent = z.discriminatedUnion("type", [
   LeadAssignedEvt,
   LeadStageChangedEvt,
   LeadDeletedEvt,
+  TodoCreatedEvt,
+  TodoUpdatedEvt,
+  TodoAssignedEvt,
+  TodoAcceptedEvt,
+  TodoDeclinedEvt,
+  TodoCompletedEvt,
+  TodoCancelledEvt,
 ]);
 export type DomainEvent = z.infer<typeof DomainEvent>;
