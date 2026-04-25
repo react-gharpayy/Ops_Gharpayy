@@ -76,7 +76,6 @@ export const localAdapter = {
           createdAt: nowISO(),
           updatedAt: nowISO(),
           completedAt: null,
-          tags: [],
         };
         const list = read<Todo>(TODOS_KEY); list.unshift(todo); write(TODOS_KEY, list);
         const evt = { ...env(correlationId), type: "evt.todo.created" as const, payload: { todo } };
