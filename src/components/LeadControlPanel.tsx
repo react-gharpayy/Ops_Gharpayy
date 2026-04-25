@@ -34,6 +34,10 @@ import { toast } from "sonner";
 import { useMountedNow } from "@/hooks/use-now";
 import { sendTourMessage as sendOwnerTourMessage } from "@/owner/messaging";
 import { useSettings } from "@/myt/lib/settings-context";
+import { ActivityTimeline } from "@/components/activities/ActivityTimeline";
+import { ActivityComposer } from "@/components/activities/ActivityComposer";
+import { TodoPanel } from "@/components/todos/TodoPanel";
+import { useActivities } from "@/hooks/useActivities";
 
 const TAG_OPTIONS = ["price-issue", "location-mismatch", "parents-involved", "urgent", "budget-low"];
 const OBJECTIONS = ["Budget", "Location", "Amenities", "Timing", "Parents", "Comparing options", "Other"];
@@ -221,7 +225,9 @@ export function LeadControlPanel() {
         {/* Body */}
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <Tabs value={tab} onValueChange={setTab} className="px-5 py-4">
-            <TabsList className="grid h-auto w-full grid-cols-4 gap-1 sm:grid-cols-7">
+            <TabsList className="grid h-auto w-full grid-cols-4 gap-1 sm:grid-cols-9">
+              <TabsTrigger value="activity" className="text-xs">Activity</TabsTrigger>
+              <TabsTrigger value="tasks" className="text-xs">Tasks</TabsTrigger>
               <TabsTrigger value="best-fit" className="text-xs">Best Fit</TabsTrigger>
               <TabsTrigger value="dossier" className="text-xs">Dossier</TabsTrigger>
               <TabsTrigger value="control" className="text-xs">Control</TabsTrigger>
@@ -232,6 +238,14 @@ export function LeadControlPanel() {
               <TabsTrigger value="handoff" className="text-xs">Handoff</TabsTrigger>
               <TabsTrigger value="log" className="text-xs">Log</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="activity" className="space-y-3 pt-4">
+              <LeadActivityTab leadId={lead.id} />
+            </TabsContent>
+
+            <TabsContent value="tasks" className="pt-4">
+              <TodoPanel entityType="lead" entityId={lead.id} />
+            </TabsContent>
 
             <TabsContent value="dossier" className="space-y-4 pt-4">
               <LeadDossierPanel lead={lead} />
