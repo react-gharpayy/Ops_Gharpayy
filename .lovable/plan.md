@@ -1,172 +1,271 @@
-I’ll implement this as one coordinated upgrade across the dashboard, owner portal, and PiP system.
+# 30x Inventory-Aligned Operating Plan
 
 ## Outcome
 
-The app will become a WhatsApp-parallel operating panel with:
+Make the CRM feel like each user owns their work, while the system manages the routing underneath:
 
-1. Slim role-based navigation instead of bloated sidebars.
-2. A stronger owner portal that reflects Flow Ops + TCM activity, not random generic dashboards.
-3. Liquid PiP across layouts.
-4. Two separate PiP modes:
-   - Lead Capture PiP: paste WhatsApp lead text and add leads fast.
-   - Lead Management PiP: review/update old, new, future, and past leads.
-5. Cross-role improvements that surface persona-specific work instead of generic lists.
+- Every pasted lead is instantly matched to available inventory in the requested area.
+- Every Flow Ops person gets a different area/goal board.
+- Every TCM gets a different tour-closing board based on their zone and assigned supply.
+- HR sees whether Flow Ops, TCMs, and Owners are producing results.
+- Owners see how their inventory is being used to create tours and bookings.
+- Use the word “Tours” everywhere, not “Visits”.
 
-## Implementation Plan
+Core operating loop:
 
-### 1. Slim navigation for every role
+```text
+Lead paste → parse → duplicate check → area demand → inventory match → Flow Ops schedules Tour → TCM closes Tour → HR monitors → Owner supplies rooms
+```
 
-Update `AppShell` navigation so each role has a focused primary sidebar, with noisy/secondary pages moved into a “More / Tools” section.
+## 1. Inventory-first Quick Add
 
-Keep approximately:
+Upgrade Quick Add so it does not just parse a lead; it immediately answers:
 
-- HR: Today, War Room, Team, Revenue, Funnel, Zones, Owners, Supply Hub.
-- Flow Ops: Today, Inbox, Leads, Schedule, Calendar, Marketplace, Supply Hub, Outreach.
-- TCM: Today, TCM Desk, My Tours, Follow-ups, Calendar, Marketplace, My Stats, Handoffs.
-- Owner: Owner Home, Approvals, Inventory/Rooms, Visits, Insights.
+- Which area did this lead ask for?
+- Which inventory is available in that area?
+- Which property should be pitched first?
+- Which Flow Ops owner should work this lead?
+- Which TCM should take the Tour if scheduled?
+- What is the next action?
 
-Remove duplicates from primary nav:
-- multiple leaderboard entries
-- overlapping manager/war-room/HR tower routes from main nav
-- health/help from main nav
-- duplicate tours/leads routes where they confuse the role
+Inside `QuickAddLeadPanel`:
 
-The routes will still exist where useful, but will not overload the main workflow.
+- Keep paste-first zero-click parsing.
+- After parsing, show an “Area Inventory Fit” block above the form:
+  - requested areas
+  - matching properties
+  - available beds/rooms
+  - price fit against budget
+  - gender/room fit
+  - distance/commute estimate where known
+  - best property to pitch
+- Add a one-click “Schedule Tour with best property” action.
+- If duplicate found, show only one decision point:
+  - “Use existing lead and schedule Tour”
+  - no phone refill, no repeated questions.
 
-### 2. Add role-persona “Today” intelligence
+## 2. Area-personalized Flow Ops boards
 
-Wire existing `personas.ts` data into the role experience:
+Flow Ops goal: schedule Tours.
 
-- TCM: show weak-spot nudge, mission, next best action, streak/commission-style motivation.
-- Flow Ops: show load-balancing suggestions, duplicate/paste-import prompts, SLA pulse.
-- HR: show people-focused cards instead of lead-only cards: who needs help, who is slipping, where revenue/SLA is bleeding.
-- Owner: show owner-specific “what changed / what to approve / what is vacant” cards.
+Each Flow Ops person should see a different board based on their assigned zone/area and available inventory.
 
-This will use current mock/store data and avoid adding fake unrelated content.
+Add/upgrade Flow Ops page with:
 
-### 3. Consolidate HR command experience
+- My Area Goal: “Schedule X Tours today in Koramangala/HSR/etc.”
+- Area inventory pressure:
+  - hot areas with vacant beds
+  - cold areas needing demand
+  - properties with rooms available now
+- Lead-to-inventory queue:
+  - leads grouped by requested area
+  - best matching property beside each lead
+  - single “Schedule Tour” action
+- Flow Ops scoreboard:
+  - leads parsed
+  - qualified leads
+  - Tours scheduled
+  - same-day Tours
+  - inventory covered
 
-Make HR feel like one command center rather than many dashboards:
+Example behavior:
 
-- Keep War Room as the primary HR command page.
-- Add mode sections/tabs/cards for:
-  - People health
-  - Revenue pace
-  - SLA breach autopsy
-  - Owner supply issues
-- De-emphasize `/manager` and `/myt` from primary nav.
+```text
+Flow Ops A: Koramangala leads + Koramangala inventory + Koramangala TCMs
+Flow Ops B: HSR leads + HSR inventory + HSR TCMs
+Flow Ops C: Whitefield leads + Whitefield inventory + Whitefield TCMs
+Flow Ops D: BTM/Electronic City leads + matching supply
+```
 
-### 4. Upgrade Owner Portal with real operational alignment
+## 3. Area-personalized TCM boards
 
-Refactor owner-facing UX to be more specific and useful:
+TCM goal: close every scheduled Tour.
 
-Owner Home will focus on:
-- Status Today: occupancy, sellable rooms, pending approvals, locked rooms.
-- What Flow Ops needs from owner: block approvals, room verification, media freshness.
-- What TCM is doing: visits, lead demand, tenant intent signals.
-- Owner action queue: approve, verify, update price, refresh photos.
-- Payout/revenue lens: simple, owner-friendly cash view.
+Each TCM should see a board tied to their own zone, properties, and scheduled Tours.
 
-Remove or reduce generic/random-feeling charts and demo switcher emphasis. Keep data tied to existing owner context, rooms, block requests, media, visits, objections, and compliance.
+Upgrade TCM dashboard with:
 
-Also simplify owner navigation to a smaller portal:
-- Home
-- Approvals
-- Rooms / Inventory
-- Visits
-- Insights
+- My Tours today, sorted by hard/medium/soft intent.
+- Property win cards:
+  - why this property fits the lead
+  - available room type
+  - price fit
+  - objections likely to come up
+  - closing script
+- “Close this Tour” checklist:
+  - confirm arrival
+  - show best room
+  - handle objection
+  - mark outcome
+  - book/token/follow-up
+- TCM target:
+  - Tours assigned
+  - show-ups
+  - closures
+  - lost reasons by property/area
 
-### 5. Build dual PiP mode system
+This makes TCMs feel they own a territory and outcome, not just a list.
 
-Extend `PipProvider` from a single generic PiP into a mode-aware system.
+## 4. HR command layer
 
-New PiP modes:
+HR goal: ensure Flow Ops and TCMs are working together.
 
-#### A. Lead Capture PiP
-Purpose: add leads from WhatsApp as fast as possible.
+Upgrade HR/War Room with:
 
-Features:
-- Compact paste box at top.
-- Auto-parse WhatsApp text into the existing full lead schema.
-- Save lead.
-- Save + next.
-- Duplicate warning.
-- Minimal fields always visible: name, phone, areas, budget, move-in, stage, assignee.
-- Optimized for 420–560px width.
+- Area-by-area operating table:
+  - leads available
+  - inventory available
+  - Tours scheduled
+  - TCM capacity
+  - bookings
+  - leak stage
+- People performance by role:
+  - Flow Ops: scheduled Tours vs goal
+  - TCM: closure/show-up vs goal
+  - Owner: inventory freshness and approval speed
+- “Where to push today” recommendations:
+  - area with supply but not enough leads
+  - area with demand but no tours
+  - TCM overloaded
+  - property owner blocking inventory
+- Clear command actions:
+  - reassign leads
+  - push Flow Ops to schedule
+  - push TCM to close
+  - ask owner for inventory/photos/price approval
 
-Button label:
-- `PiP Add Lead`
+## 5. Owner inventory cockpit
 
-#### B. Lead Management PiP
-Purpose: update and process leads without returning to main dashboard.
+Owner goal: give inventory to the team so everyone can produce results.
 
-Features:
-- Search bar.
-- Compact lead list.
-- Filters/chips:
-  - New lead
-  - Old lead
-  - Future lead
-  - Past lead
-- Quick status/stage update.
-- Call/WhatsApp shortcut.
-- Notes/follow-up quick actions.
-- Selected lead micro timeline from current activities/calls/messages where available.
+Update owner pages so owners see:
 
-Button label:
-- `PiP Manage Leads`
+- My available rooms/beds.
+- Which leads are asking for my area/property.
+- How many Tours were scheduled from my inventory.
+- What the team needs from me:
+  - approve room block
+  - update price
+  - add photos
+  - confirm room availability
+- “Managed by Gharpayy” confidence layer:
+  - owner feels they own the inventory
+  - team visibly manages demand, Tours, and closure.
 
-### 6. Make PiP liquid across layouts
+Also rename owner “Visits” navigation/page wording to “Tours”.
 
-Improve PiP rendering so it works cleanly on desktop/laptop and small floating window sizes:
+## 6. Pipeline feature
 
-- PiP-specific layout class on the PiP document/root.
-- Hide heavy sidebar/header when in PiP mode where needed.
-- Use compact spacing and sticky actions.
-- Add shrink/expand controls inside PiP.
-- Keep browser fallback clear if Document Picture-in-Picture is unavailable.
+Add a clear pipeline view so nobody loses where the lead is.
 
-### 7. Keep route/state continuity
+Pipeline stages:
 
-Improve state continuity between the main tab and PiP:
+```text
+New Lead → Parsed → Qualified → Inventory Matched → Options Shared → Tour Scheduled → Tour Done → Booked / Follow-up / Lost
+```
 
-- Keep existing same React store behavior for portal-based PiP rendering.
-- Extend BroadcastChannel sync for route/view mode/filter/selected lead events where needed.
-- Ensure updating a lead in PiP immediately reflects when the user switches back.
-- Ensure selected lead/search/filter state can be mirrored between the main view and PiP management panel.
+Pipeline should support filters by:
 
-### 8. Add lead lifecycle buckets
+- area
+- Flow Ops person
+- TCM
+- property
+- lead age
+- inventory fit
+- duplicate status
 
-For PiP Manage Leads, classify leads into:
+This becomes the shared truth for all four roles.
 
-- New: recently created or untouched.
-- Old: stale/no recent activity.
-- Future: move-in/follow-up/tour scheduled ahead.
-- Past: completed, dropped, booked, old move-in date, or finished tour context.
+## 7. Geo-intelligence tied to inventory
 
-These are UI classifications derived from existing lead/tour/follow-up fields; no database changes required.
+Implement the Geo-intelligence tab as an operational tool, not just a display.
 
-### 9. Validation
+For every parsed lead:
 
-After implementation I will run:
+- pull parsed location
+- pull map links
+- detect areas/landmarks
+- show “distance from lead location to matched inventory”
+- show “distance from there to here” for common travel/area comparison
+- show confidence:
+  - high: map link or known landmark
+  - medium: recognized area
+  - low: vague/free-text location
+- show recommended action:
+  - pitch exact area
+  - pitch nearby area
+  - ask for map pin
+  - skip if supply mismatch
 
-- TypeScript check/build validation.
-- Parser-related tests where available.
-- Manual code validation for PiP support/fallback paths.
-- Ensure no imports target missing files and no `routeTree.gen.ts` manual edits are needed.
+## 8. Result-linked Coach
 
-## Technical Files Likely To Change
+Upgrade Coach so it gives goals, not generic tips.
 
-- `src/components/AppShell.tsx`
-- `src/components/pip/PipProvider.tsx`
-- `src/components/pip/PipButton.tsx`
-- `src/components/pip/usePipSync.ts`
-- new PiP components such as `LeadCapturePipPanel` and `LeadManagePipPanel`
-- `src/myt/pages/MYTLeadTracker.tsx`
+Coach examples:
+
+- Flow Ops: “You are 3 Tours behind in HSR. These 5 leads match available beds. Schedule now.”
+- TCM: “You have 2 hard Tours at Koramangala. Pitch these rooms first; price fit is strong.”
+- HR: “Whitefield has 12 available beds but only 2 Tours scheduled. Push Flow Ops.”
+- Owner: “Your room has demand but no fresh photos. Upload/approve to unlock more Tours.”
+
+Coach must use supply, inventory, Tours, bookings, and people performance.
+
+## 9. Four-persona testing requirement
+
+Test the module as at least four personas for each role.
+
+Flow Ops personas:
+
+1. High-volume WhatsApp scheduler.
+2. New Flow Ops who needs the system to suggest property/TCM.
+3. Area owner for Koramangala/HSR.
+4. Backlog cleaner handling old/duplicate leads.
+
+TCM personas:
+
+1. Field TCM with many same-day Tours.
+2. High closer who should get hard leads.
+3. New TCM needing scripts and property fit context.
+4. Overloaded TCM who needs capacity protection.
+
+HR personas:
+
+1. Founder/leader checking revenue gap.
+2. Team manager checking who is underperforming.
+3. Supply-demand controller checking areas.
+4. Quality reviewer checking leaks and lost reasons.
+
+Owner personas:
+
+1. Owner with ready inventory.
+2. Owner blocking approvals.
+3. Owner with low occupancy.
+4. Owner needing confidence that Gharpayy is managing everything.
+
+## 10. Technical implementation notes
+
+Likely files/modules to update or add:
+
 - `src/components/leads/QuickAddLeadPanel.tsx`
-- owner pages/components under `src/owner/pages/*`
-- possibly small helper modules for lead lifecycle classification and persona action cards
+- `src/myt/pages/ScheduleTour.tsx`
+- `src/myt/pages/MYTLeadTracker.tsx`
+- `src/myt/pages/FlowOpsDashboard.tsx`
+- `src/myt/pages/TCMDashboard.tsx`
+- `src/myt/pages/WarRoom.tsx`
+- owner pages under `src/owner/pages/*`
+- `src/components/AppShell.tsx` for “Tours” terminology and role navigation
+- new shared inventory intelligence helper, for example `src/myt/lib/inventory-intelligence.ts`
+- new pipeline page/route, for example `src/myt/pages/Pipeline.tsx` and `src/routes/myt/pipeline.tsx`
+- coach logic in `src/lib/coach.ts`, `CoachInline`, and `CoachWidget`
 
-## Notes
+Use current local stores/mock data first. No cloud/database tool is required for this pass.
 
-I’ll keep this as a front-end/store-level upgrade using existing local app stores and mock/context data. I won’t add backend/database work unless you later ask for persistence beyond the current app state.
+## 11. Validation
+
+After implementation:
+
+- Run TypeScript/build validation.
+- Test Quick Add paste → inventory match → duplicate → Tour scheduling.
+- Test each role at mobile-ish viewport and desktop.
+- Verify “Visits” is replaced with “Tours” in visible UI.
+- Walk through the four-role persona checklist and confirm each role has goals, inventory context, and next actions.
