@@ -210,6 +210,18 @@ Coach examples:
 
 Coach must use supply, inventory, Tours, bookings, and people performance.
 
+## 8A. 15x ownership-mode experience
+
+Make each role feel like they own their area, people, and outcomes while the system manages routing, matching, capacity, and reminders underneath.
+
+- Flow Ops owns: area goal, matched lead queue, best property pitch, and one-click Tour scheduling.
+- TCM owns: today's assigned Tours, property win cards, show-up control, objection handling, and closing checklist.
+- HR owns: area operating table, role performance, leaks, overloads, and command actions.
+- Property Owner owns: room readiness, pricing/photos/availability approvals, and demand generated from their inventory.
+- System manages: duplicate linking, inventory fit, TCM capacity, property recommendation, room blocks, result-linked Coach nudges, and pipeline movement.
+
+The UI should avoid making users repeat data already known by the system. Existing leads must move straight to Tour scheduling with one decision point.
+
 ## 9. Four-persona testing requirement
 
 Test the module as at least four personas for each role.
@@ -269,3 +281,35 @@ After implementation:
 - Test each role at mobile-ish viewport and desktop.
 - Verify “Visits” is replaced with “Tours” in visible UI.
 - Walk through the four-role persona checklist and confirm each role has goals, inventory context, and next actions.
+
+### End-to-end Tours persona checklist
+
+Validate the Tours flow like real users, not only as screens.
+
+Flow Ops personas:
+
+1. High-volume scheduler pastes copied lead data, sees parsed fields immediately, and schedules the best inventory-matched Tour without retyping.
+2. New Flow Ops follows system recommendations for area, property, Flow Ops owner, and TCM.
+3. Area owner checks their zone goal, matched inventory, lead queue, and daily Tours target.
+4. Backlog cleaner finds a duplicate and uses the single “existing lead → Tour” decision path.
+
+TCM personas:
+
+1. Field TCM sees only their zone/Tours, property fit, slot, lead intent, and closing checklist.
+2. High closer receives hard Tours and knows which property/room to pitch first.
+3. New TCM gets objection prompts, room fit, budget fit, and why-this-property context.
+4. Overloaded TCM sees capacity protection and reassignment signals instead of more unmanaged work.
+
+HR personas:
+
+1. Founder checks area demand, supply, Tours scheduled, closures, and revenue leakage.
+2. Team manager compares Flow Ops scheduling output and TCM closing output.
+3. Supply-demand controller sees areas with beds but low demand, and demand but too few Tours.
+4. Quality reviewer checks duplicate handling, pipeline stage leaks, lost reasons, and owner blockers.
+
+Property Owner personas:
+
+1. Ready-inventory owner sees available beds and Tours generated from their rooms.
+2. Blocking owner sees exact pending approvals/photos/pricing needed by the team.
+3. Low-occupancy owner sees demand gaps and actions that unlock more Tours.
+4. Trust-focused owner sees “Managed by Gharpayy” control: team is driving leads, Tours, and closures from their inventory.
