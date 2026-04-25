@@ -35,6 +35,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [blocks, setBlocks] = useState<RoomBlock[]>(initialBlocks);
+  const [managedProperties, setManagedProperties] = useState<Property[]>([]);
+  const [managedRooms, setManagedRooms] = useState<Room[]>([]);
   const [currentRole, setCurrentRole] = useState<Role>('hr');
   const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
   const [globalZoneFilter, setGlobalZoneFilter] = useState<string | null>(null);
