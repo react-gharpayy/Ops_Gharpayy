@@ -74,6 +74,13 @@ export const api = {
     },
   },
 
+  activities: {
+    list: <T = import("@/contracts").Activity>(q: { entityType: string; entityId: string; kind?: string; limit?: number }) => {
+      const qs = new URLSearchParams(Object.entries(q).map(([k, v]) => [k, String(v)])).toString();
+      return request<{ items: T[] }>(`/api/activities?${qs}`);
+    },
+  },
+
   users: {
     list: () => request<{ items: { _id: string; name: string; email: string; role: string }[] }>("/api/users"),
   },
