@@ -129,8 +129,8 @@ export default function MYTLeadTracker() {
         </div>
       </div>
 
-      {/* PiP fallback */}
-      {!pipSupported && (
+      {/* PiP fallback (only after mount to avoid SSR hydration mismatch) */}
+      {pipMounted && !pipSupported && (
         <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs flex items-start gap-2">
           <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
           <div>
