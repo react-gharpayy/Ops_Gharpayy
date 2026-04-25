@@ -101,6 +101,8 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
       });
       return { ok: true, eventIds: [evtId] };
     }
+
+    case "cmd.lead.update": {
       const p = UpdateLeadCmd.parse(cmd).payload;
       const patch = { ...p.patch, updatedAt: now };
       const r = await col(LEADS).updateOne({ _id: p.leadId, tenantId: user.tenantId }, { $set: patch });
