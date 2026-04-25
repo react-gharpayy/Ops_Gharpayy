@@ -467,7 +467,7 @@ export default function ScheduleTour({ onScheduled }: ScheduleTourProps = {}) {
               <Label className={labelCls}>Property</Label>
               <select value={form.propertyName} onChange={e => setForm(f => ({ ...f, propertyName: e.target.value }))} className={select}>
                 <option value="">Select property…</option>
-                {allProperties.filter(p => p.zoneId === form.zoneId).map(p => (
+                {supplyHubProperties.filter(p => p.zoneId === form.zoneId).map(p => (
                   <option key={p.id} value={p.name}>{p.name} · ₹{(p.basePrice/1000).toFixed(0)}k</option>
                 ))}
               </select>
