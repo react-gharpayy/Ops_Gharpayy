@@ -19,8 +19,15 @@ import { buildDoNextQueue } from "@/lib/engine";
 import { useGame, whoKey } from "@/lib/gamification";
 import { useCRM10x } from "@/lib/crm10x/store";
 import { useEffect, useMemo } from "react";
-import { PictureInPictureProvider, PipMount } from "./pip/PipProvider";
+import { PictureInPictureProvider, PipMount, usePip } from "./pip/PipProvider";
 import { PipButton } from "./pip/PipButton";
+import { usePipRouteSync } from "./pip/usePipSync";
+
+function PipRouteSyncBridge() {
+  const { active } = usePip();
+  usePipRouteSync(active);
+  return null;
+}
 
 type NavItem = { to: string; label: string; icon: typeof Target; badge?: number; accent?: boolean };
 
@@ -160,6 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <PictureInPictureProvider>
+      <PipRouteSyncBridge />
       <div className="min-h-screen flex w-full bg-background text-foreground">
       {/* Sidebar */}
       <aside className="hidden md:flex w-[240px] flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border sticky top-0 h-screen">
