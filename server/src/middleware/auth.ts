@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { verifyToken, type JwtClaims } from "./auth.js";
+import { verifyToken, type JwtClaims } from "../auth/auth.js";
 import type { Scope } from "../../../src/contracts/roles.js";
 
 declare module "fastify" {
