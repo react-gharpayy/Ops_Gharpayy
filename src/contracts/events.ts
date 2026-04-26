@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Lead, Todo, Activity } from "./entities";
+import { Lead, Todo, Activity } from "./entities.js";
 
 // Event registry — every event the system can emit. Server publishes, client + workers subscribe.
 export const EventType = z.enum([
