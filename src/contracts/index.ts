@@ -3,9 +3,9 @@
 //
 // Rule: NEVER mutate state outside a command. NEVER emit an event that isn't in the registry.
 
-export * from "./ids";
-export * from "./roles";
-export * from "./entities";
-export * from "./events";
-export * from "./commands";
-export * from "./errors";
+export * from "./ids.js";
+export * from "./roles.js";
+export * from "./entities.js";
+export * from "./events.js";
+export * from "./commands.js";
+export * from "./errors.js";

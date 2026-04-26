@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Lead, LeadStage, Intent, Todo, TodoEntityType, TodoPriority, Activity, ActivityKind, ActivityEntityType, ActivityDirection, ActivityOutcome } from "./entities";
+import { Lead, LeadStage, Intent, Todo, TodoEntityType, TodoPriority, Activity, ActivityKind, ActivityEntityType, ActivityDirection, ActivityOutcome } from "./entities.js";
 
 // Command registry — every state-changing intent. Validated client + server.
 export const CommandType = z.enum([
