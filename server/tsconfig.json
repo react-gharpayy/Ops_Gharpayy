@@ -8,11 +8,11 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "..",
     "baseUrl": ".",
     "paths": {
       "@contracts/*": ["../src/contracts/*"]
     }
   },
-  "include": ["src", "../src/contracts"]
+  "include": ["src/**/*", "../src/contracts/**/*"]
 }
