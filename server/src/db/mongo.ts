@@ -21,8 +21,8 @@ export function getDb(): Db {
   return db;
 }
 
-export function col<T extends Document = Document>(name: string): Collection<T> {
-  return getDb().collection<T>(name);
+export function col<T extends Document = Document>(name: string): Collection<T & { _id: string }> {
+  return getDb().collection<T & { _id: string }>(name);
 }
 
 async function ensureIndexes(db: Db) {
