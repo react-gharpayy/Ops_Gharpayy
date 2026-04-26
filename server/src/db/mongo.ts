@@ -26,25 +26,46 @@ export function col<T extends Document = Document>(name: string): Collection<T &
 }
 
 async function ensureIndexes(db: Db) {
-  await Promise.all([
-    db.collection("leads").createIndexes([
-      { key: { tenantId: 1, createdAt: -1 } },
-      { key: { tenantId: 1, phone: 1 }, unique: false },
-      { key: { tenantId: 1, assignedTcmId: 1 } },
-      { key: { tenantId: 1, stage: 1 } },
-      { key: { tenantId: 1, zoneId: 1, stage: 1 } },
-    ]),
-    db.collection("entity_event").createIndexes([
-      { key: { tenantId: 1, occurredAt: -1 } },
-      { key: { correlationId: 1 } },
-      { key: { type: 1 } },
-    ]),
-    db.collection("command_ledger").createIndex({ _id: 1 }, { unique: true }),
-    db.collection("users").createIndex({ email: 1 }, { unique: true }),
-    db.collection("user_roles").createIndex({ userId: 1 }),
-    db.collection("sessions").createIndex({ token: 1 }, { unique: true }),
-    db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-  ]);
+  // NOTE: do NOT manually create an index on `_id` — MongoDB creates a
+  // unique `_id` index automatically and rejects any attempt to redefine it.
+  const tasks: Array<{ name: string; run: () => Promise<unknown> }> = [
+    {
+      name: "leads",
+      run: () =>
+        db.collection("leads").createIndexes([
+          { key: { tenantId: 1, createdAt: -1 } },
+          { key: { tenantId: 1, phone: 1 }, unique: false },
+          { key: { tenantId: 1, assignedTcmId: 1 } },
+          { key: { tenantId: 1, stage: 1 } },
+          { key: { tenantId: 1, zoneId: 1, stage: 1 } },
+        ]),
+    },
+    {
+      name: "entity_event",
+      run: () =>
+        db.collection("entity_event").createIndexes([
+          { key: { tenantId: 1, occurredAt: -1 } },
+          { key: { correlationId: 1 } },
+          { key: { type: 1 } },
+        ]),
+    },
+    { name: "users.email", run: () => db.collection("users").createIndex({ email: 1 }, { unique: true }) },
+    { name: "user_roles.userId", run: () => db.collection("user_roles").createIndex({ userId: 1 }) },
+    { name: "sessions.token", run: () => db.collection("sessions").createIndex({ token: 1 }, { unique: true }) },
+    {
+      name: "sessions.expiresAt",
+      run: () => db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    },
+  ];
+
+  // Run sequentially with isolation: a single bad index must NOT prevent boot.
+  for (const t of tasks) {
+    try {
+      await t.run();
+    } catch (err) {
+      console.warn(`[mongo] index '${t.name}' skipped:`, (err as Error).message);
+    }
+  }
 }
 
 export async function disconnectMongo() {
