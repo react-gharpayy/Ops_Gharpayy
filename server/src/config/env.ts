@@ -1,4 +1,16 @@
+import { config as loadDotenv } from "dotenv";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+
+const here = dirname(fileURLToPath(import.meta.url));
+for (const envPath of [
+  resolve(process.cwd(), ".env"),
+  resolve(here, "../../.env"),
+  resolve(here, "../../../../.env"),
+]) {
+  loadDotenv({ path: envPath, override: false });
+}
 
 const Env = z.object({
   MONGO_URL: z.string().min(1),
