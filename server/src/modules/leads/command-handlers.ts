@@ -180,6 +180,8 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
         payload: { leadId: p.leadId },
       });
       return { ok: true, eventIds: [evtId] };
+    }
   }
   throw Object.assign(new Error(`Unknown command type: ${(cmd as { type: string }).type}`), { code: "BAD_COMMAND" });
 }
+
