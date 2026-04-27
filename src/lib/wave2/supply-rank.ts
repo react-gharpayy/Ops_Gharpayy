@@ -32,19 +32,21 @@ export function rankSupplyForLead(lead: Lead, pgs: PG[]): FitResult[] {
     signals.push(v.oneLine);
 
     // Budget fit
-    const minPrice = pg.minPrice ?? 0;
-    if (lead.budget >= minPrice && lead.budget <= minPrice * 1.3) {
+    const minPrice = pg.prices?.min ?? 0;
+    if (minPrice > 0 && lead.budget >= minPrice && lead.budget <= minPrice * 1.3) {
       score += 18; signals.push(`In budget · ₹${minPrice.toLocaleString("en-IN")}`);
-    } else if (lead.budget < minPrice) {
+    } else if (minPrice > 0 && lead.budget < minPrice) {
       score -= 15; signals.push(`Above budget by ₹${(minPrice - lead.budget).toLocaleString("en-IN")}`);
     }
 
-    // Gender / audience tags
+    // Gender / audience match
     const tags = new Set(lead.tags.map((t) => t.toLowerCase()));
-    const pgTags = (pg.tags ?? []).map((t) => t.toLowerCase());
-    if (tags.has("girls") && pgTags.includes("girls")) { score += 6; signals.push("Girls-only match"); }
-    if (tags.has("boys")  && pgTags.includes("boys"))  { score += 6; signals.push("Boys-only match"); }
-    if (tags.has("student") && pgTags.includes("student")) { score += 4; signals.push("Student-friendly"); }
+    const g = pg.gender?.toLowerCase() ?? "";
+    if (tags.has("girls") && g.includes("girl")) { score += 6; signals.push("Girls-only match"); }
+    if (tags.has("boys")  && g.includes("boy"))  { score += 6; signals.push("Boys-only match"); }
+    const aud = pg.audience?.toLowerCase() ?? "";
+    if (tags.has("student") && aud.includes("student")) { score += 4; signals.push("Student-friendly"); }
+    if (tags.has("working") && aud.includes("working")) { score += 4; signals.push("Working-pro friendly"); }
 
     // Availability freshness (assume pg.updatedAt or fallback)
     const upd = (pg as unknown as { updatedAt?: string }).updatedAt;
