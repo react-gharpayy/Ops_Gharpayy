@@ -3,12 +3,20 @@
 // before the backend is deployed. Auto-engaged when VITE_API_URL is unset
 // or the server is unreachable.
 import { ulid } from "@/contracts";
-import type { Todo, Activity, DomainEvent } from "@/contracts";
+import type { Todo, Activity, DomainEvent, Lead } from "@/contracts";
 
 const TODOS_KEY = "gharpayy.local.todos";
 const ACTS_KEY = "gharpayy.local.activities";
+const LEADS_KEY = "gharpayy.local.leads";
 const TENANT = "local";
 const USER = "local-user";
+
+// Seed a handful of demo leads on first load so the live-leads UI isn't empty.
+const SEED_LEADS: Lead[] = [
+  { _id: "LD000000000000000000000001", name: "Aarav Mehta", phone: "+919812345671", source: "instagram", budget: 12000, moveInDate: "2026-05-10", preferredArea: "Koramangala", zoneId: "z-blr-south", assignedTcmId: null, stage: "new", intent: "warm", confidence: 60, tags: [], nextFollowUpAt: null, responseSpeedMins: 0, createdAt: new Date(Date.now() - 86_400_000).toISOString(), updatedAt: new Date(Date.now() - 86_400_000).toISOString(), createdBy: USER, tenantId: TENANT },
+  { _id: "LD000000000000000000000002", name: "Riya Sharma",  phone: "+919812345672", source: "google",    budget: 18000, moveInDate: "2026-05-15", preferredArea: "HSR Layout",  zoneId: "z-blr-south", assignedTcmId: null, stage: "engaged", intent: "hot", confidence: 78, tags: ["urgent"], nextFollowUpAt: null, responseSpeedMins: 4, createdAt: new Date(Date.now() - 3_600_000).toISOString(), updatedAt: new Date().toISOString(), createdBy: USER, tenantId: TENANT },
+  { _id: "LD000000000000000000000003", name: "Karan Verma",  phone: "+919812345673", source: "referral",  budget: 9500,  moveInDate: "2026-06-01", preferredArea: "Whitefield",  zoneId: "z-blr-east",  assignedTcmId: null, stage: "qualified", intent: "warm", confidence: 65, tags: [], nextFollowUpAt: null, responseSpeedMins: 12, createdAt: new Date(Date.now() - 7_200_000).toISOString(), updatedAt: new Date().toISOString(), createdBy: USER, tenantId: TENANT },
+];
 
 type Listener = (e: DomainEvent) => void;
 const listeners = new Set<Listener>();
