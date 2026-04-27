@@ -3,12 +3,20 @@
 // before the backend is deployed. Auto-engaged when VITE_API_URL is unset
 // or the server is unreachable.
 import { ulid } from "@/contracts";
-import type { Todo, Activity, DomainEvent } from "@/contracts";
+import type { Todo, Activity, DomainEvent, Lead } from "@/contracts";
 
 const TODOS_KEY = "gharpayy.local.todos";
 const ACTS_KEY = "gharpayy.local.activities";
+const LEADS_KEY = "gharpayy.local.leads";
 const TENANT = "local";
 const USER = "local-user";
+
+// Seed a handful of demo leads on first load so the live-leads UI isn't empty.
+const SEED_LEADS: Lead[] = [
+  { _id: "LD000000000000000000000001", name: "Aarav Mehta", phone: "+919812345671", source: "instagram", budget: 12000, moveInDate: "2026-05-10", preferredArea: "Koramangala", zoneId: "z-blr-south", assignedTcmId: null, stage: "new", intent: "warm", confidence: 60, tags: [], nextFollowUpAt: null, responseSpeedMins: 0, createdAt: new Date(Date.now() - 86_400_000).toISOString(), updatedAt: new Date(Date.now() - 86_400_000).toISOString(), createdBy: USER, tenantId: TENANT },
+  { _id: "LD000000000000000000000002", name: "Riya Sharma",  phone: "+919812345672", source: "google",    budget: 18000, moveInDate: "2026-05-15", preferredArea: "HSR Layout",  zoneId: "z-blr-south", assignedTcmId: null, stage: "contacted", intent: "hot", confidence: 78, tags: ["urgent"], nextFollowUpAt: null, responseSpeedMins: 4, createdAt: new Date(Date.now() - 3_600_000).toISOString(), updatedAt: new Date().toISOString(), createdBy: USER, tenantId: TENANT },
+  { _id: "LD000000000000000000000003", name: "Karan Verma",  phone: "+919812345673", source: "referral",  budget: 9500,  moveInDate: "2026-06-01", preferredArea: "Whitefield",  zoneId: "z-blr-east",  assignedTcmId: null, stage: "tour-scheduled", intent: "warm", confidence: 65, tags: [], nextFollowUpAt: null, responseSpeedMins: 12, createdAt: new Date(Date.now() - 7_200_000).toISOString(), updatedAt: new Date().toISOString(), createdBy: USER, tenantId: TENANT },
+];
 
 type Listener = (e: DomainEvent) => void;
 const listeners = new Set<Listener>();
@@ -50,6 +58,14 @@ export const localAdapter = {
 
   listUsers() {
     return { items: [{ _id: USER, name: "Me (local)", email: "me@local", role: "admin" }] };
+  },
+
+  listLeads(q: { limit?: number } = {}) {
+    if (typeof window !== "undefined" && !localStorage.getItem(LEADS_KEY)) {
+      write(LEADS_KEY, SEED_LEADS);
+    }
+    const items = read<Lead>(LEADS_KEY).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return { items: items.slice(0, q.limit ?? 100), nextCursor: null as string | null };
   },
 
   // ---------- Commands ----------
@@ -142,7 +158,82 @@ export const localAdapter = {
         return { ok: true, eventIds: [evt._id] };
       }
 
-      // Lead commands aren't simulated locally yet — those still flow through useApp store.
+      // ----- Lead commands (mirror server/src/modules/leads/command-handlers.ts) -----
+      if (t === "cmd.lead.create") {
+        const p = cmd.payload as Record<string, unknown>;
+        const lead: Lead = {
+          _id: ulid(),
+          name: String(p.name ?? ""),
+          phone: String(p.phone ?? ""),
+          source: (p.source as string) ?? "manual",
+          budget: Number(p.budget ?? 0),
+          moveInDate: String(p.moveInDate ?? new Date().toISOString().slice(0, 10)),
+          preferredArea: String(p.preferredArea ?? ""),
+          zoneId: (p.zoneId as string | null) ?? null,
+          assignedTcmId: null,
+          stage: "new",
+          intent: (p.intent as Lead["intent"]) ?? "warm",
+          confidence: 50,
+          tags: (p.tags as string[]) ?? [],
+          nextFollowUpAt: null,
+          responseSpeedMins: 0,
+          createdAt: nowISO(), updatedAt: nowISO(),
+          createdBy: USER, tenantId: TENANT,
+        };
+        const list = read<Lead>(LEADS_KEY); list.unshift(lead); write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.created" as const, payload: { lead } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.update") {
+        const p = cmd.payload as { leadId: string; patch: Partial<Lead> };
+        const list = read<Lead>(LEADS_KEY);
+        const idx = list.findIndex((l) => l._id === p.leadId);
+        if (idx < 0) return { ok: false, error: "Lead not found" };
+        const patch = { ...p.patch, updatedAt: nowISO() };
+        list[idx] = { ...list[idx], ...patch } as Lead;
+        write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.updated" as const, payload: { leadId: p.leadId, patch } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.assign") {
+        const p = cmd.payload as { leadId: string; tcmId: string };
+        const list = read<Lead>(LEADS_KEY);
+        const idx = list.findIndex((l) => l._id === p.leadId);
+        if (idx < 0) return { ok: false, error: "Lead not found" };
+        list[idx] = { ...list[idx], assignedTcmId: p.tcmId, updatedAt: nowISO() };
+        write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.assigned" as const, payload: { leadId: p.leadId, tcmId: p.tcmId } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.change_stage") {
+        const p = cmd.payload as { leadId: string; to: Lead["stage"] };
+        const list = read<Lead>(LEADS_KEY);
+        const idx = list.findIndex((l) => l._id === p.leadId);
+        if (idx < 0) return { ok: false, error: "Lead not found" };
+        const from = list[idx].stage;
+        list[idx] = { ...list[idx], stage: p.to, updatedAt: nowISO() };
+        write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.stage_changed" as const, payload: { leadId: p.leadId, from, to: p.to } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.delete") {
+        const p = cmd.payload as { leadId: string };
+        const list = read<Lead>(LEADS_KEY);
+        if (!list.some((l) => l._id === p.leadId)) return { ok: false, error: "Lead not found" };
+        write(LEADS_KEY, list.filter((l) => l._id !== p.leadId));
+        const evt = { ...env(correlationId), type: "evt.lead.deleted" as const, payload: { leadId: p.leadId } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
       return { ok: true, eventIds: [] };
     } catch (e) {
       return { ok: false, error: (e as Error).message };
