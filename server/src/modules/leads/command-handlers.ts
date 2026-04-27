@@ -181,8 +181,17 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
     case "cmd.lead.update": {
       const p = UpdateLeadCmd.parse(cmd).payload;
       const patch = { ...p.patch, updatedAt: now };
-      const r = await col(LEADS).updateOne({ _id: p.leadId, tenantId: user.tenantId }, { $set: patch });
-      if (r.matchedCount === 0) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
+      // Optimistic concurrency: $inc __v atomically. If client supplied
+      // expectedVersion (future-proof), enforce it; otherwise just bump.
+      const expected = (cmd as unknown as { expectedVersion?: number }).expectedVersion;
+      const filter: Record<string, unknown> = { _id: p.leadId, tenantId: user.tenantId };
+      if (typeof expected === "number") filter.__v = expected;
+      const r = await col(LEADS).updateOne(filter, { $set: patch, $inc: { __v: 1 } });
+      if (r.matchedCount === 0) {
+        const stillExists = await col(LEADS).findOne({ _id: p.leadId, tenantId: user.tenantId });
+        if (!stillExists) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
+        throw Object.assign(new Error("Version conflict — reload and retry"), { code: "CONFLICT" });
+      }
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.updated", occurredAt: now,
@@ -206,7 +215,7 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
       const p = AssignLeadCmd.parse(cmd).payload;
       const r = await col(LEADS).updateOne(
         { _id: p.leadId, tenantId: user.tenantId },
-        { $set: { assignedTcmId: p.tcmId, updatedAt: now } },
+        { $set: { assignedTcmId: p.tcmId, updatedAt: now }, $inc: { __v: 1 } },
       );
       if (r.matchedCount === 0) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
       const evtId = newEventId();
@@ -227,9 +236,14 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
 
     case "cmd.lead.change_stage": {
       const p = ChangeStageCmd.parse(cmd).payload;
-      const before = await col<{ stage: string }>(LEADS).findOne({ _id: p.leadId, tenantId: user.tenantId });
+      // Atomic read-modify-write via findOneAndUpdate so two concurrent stage
+      // changes can't lose the "from" value.
+      const before = await col<{ stage: string; __v?: number }>(LEADS).findOneAndUpdate(
+        { _id: p.leadId, tenantId: user.tenantId },
+        { $set: { stage: p.to, updatedAt: now }, $inc: { __v: 1 } },
+        { returnDocument: "before" },
+      );
       if (!before) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
-      await col(LEADS).updateOne({ _id: p.leadId, tenantId: user.tenantId }, { $set: { stage: p.to, updatedAt: now } });
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.stage_changed", occurredAt: now,
@@ -244,6 +258,7 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
       });
       return { ok: true, eventIds: [evtId] };
     }
+
 
     case "cmd.lead.delete": {
       const p = DeleteLeadCmd.parse(cmd).payload;
