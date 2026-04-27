@@ -82,10 +82,14 @@ export const api = {
     ),
 
   leads: {
-    list: (q: Record<string, string | number> = {}) => {
-      const qs = new URLSearchParams(Object.entries(q).map(([k, v]) => [k, String(v)])).toString();
-      return request<{ items: unknown[]; nextCursor: string | null }>(`/api/leads${qs ? `?${qs}` : ""}`);
-    },
+    list: (q: Record<string, string | number> = {}) =>
+      safe<{ items: unknown[]; nextCursor: string | null }>(
+        () => {
+          const qs = new URLSearchParams(Object.entries(q).map(([k, v]) => [k, String(v)])).toString();
+          return request<{ items: unknown[]; nextCursor: string | null }>(`/api/leads${qs ? `?${qs}` : ""}`);
+        },
+        () => localAdapter.listLeads({ limit: typeof q.limit === "number" ? q.limit : Number(q.limit ?? 100) }),
+      ),
     get: (id: string) => request<unknown>(`/api/leads/${id}`),
   },
 
