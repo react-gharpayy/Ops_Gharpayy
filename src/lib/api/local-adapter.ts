@@ -60,6 +60,14 @@ export const localAdapter = {
     return { items: [{ _id: USER, name: "Me (local)", email: "me@local", role: "admin" }] };
   },
 
+  listLeads(q: { limit?: number } = {}) {
+    if (typeof window !== "undefined" && !localStorage.getItem(LEADS_KEY)) {
+      write(LEADS_KEY, SEED_LEADS);
+    }
+    const items = read<Lead>(LEADS_KEY).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return { items: items.slice(0, q.limit ?? 100), nextCursor: null as string | null };
+  },
+
   // ---------- Commands ----------
   command(cmd: CmdIn): { ok: true; eventIds: string[] } | { ok: false; error: string } {
     try {
