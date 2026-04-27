@@ -210,7 +210,7 @@ export function summariseLead(lead: Lead, activities: Activity[], todos: Todo[])
   const last = activities[0];
   const calls = activities.filter((a) => a.kind === "call").length;
   const messages = activities.filter((a) => a.kind === "whatsapp" || a.kind === "sms" || a.kind === "email").length;
-  const objections = activities.filter((a) => a.kind === "objection_logged").length;
+  const objections = activities.filter((a) => /objection/i.test(a.subject ?? "")).length;
 
   const bullets = [
     `${score.score}/100 booking probability (${score.band})`,
