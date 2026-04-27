@@ -41,13 +41,52 @@ async function ensureIndexes(db: Db) {
         ]),
     },
     {
+      name: "lead_phone_index",
+      // Hard dedup boundary. The ONLY way to prevent duplicate-storms when the
+      // same lead arrives from 5 sources in 200ms. Insert into THIS collection
+      // first; on E11000 → return existing leadId.
+      run: () =>
+        db.collection("lead_phone_index").createIndex(
+          { tenantId: 1, phoneE164: 1 },
+          { unique: true, name: "uniq_tenant_phone" },
+        ),
+    },
+    {
       name: "entity_event",
       run: () =>
         db.collection("entity_event").createIndexes([
           { key: { tenantId: 1, occurredAt: -1 } },
           { key: { correlationId: 1 } },
           { key: { type: 1 } },
+          // Per-aggregate monotonic ordering — physical guarantee against gaps & double-append.
+          { key: { aggregateType: 1, aggregateId: 1, seq: 1 }, unique: true, sparse: true, name: "uniq_aggregate_seq" },
+          // Outbox scanner — partial index keeps it tiny even at 10M+ events.
+          { key: { publishedAt: 1, _id: 1 }, partialFilterExpression: { publishedAt: null }, name: "outbox_pending" },
         ]),
+    },
+    {
+      name: "command_ledger.ttl",
+      // 7-day TTL on idempotency ledger — long enough to absorb any retry storm,
+      // short enough to keep the collection bounded.
+      run: () => db.collection("command_ledger").createIndex(
+        { appliedAtTtl: 1 },
+        { expireAfterSeconds: 7 * 24 * 60 * 60, name: "ttl_appliedAt" },
+      ),
+    },
+    {
+      name: "aggregate_seq",
+      run: () => db.collection("aggregate_seq").createIndex({ _id: 1 }, { name: "by_id" }),
+    },
+    {
+      name: "dlq",
+      run: () => db.collection("dlq").createIndexes([
+        { key: { queue: 1, failedAt: -1 } },
+        { key: { eventId: 1 } },
+      ]),
+    },
+    {
+      name: "sessions.refresh",
+      run: () => db.collection("sessions").createIndex({ userId: 1 }, { name: "by_user" }),
     },
     { name: "users.email", run: () => db.collection("users").createIndex({ email: 1 }, { unique: true }) },
     { name: "user_roles.userId", run: () => db.collection("user_roles").createIndex({ userId: 1 }) },

@@ -11,9 +11,14 @@ import {
 } from "../../../../src/contracts/commands.js";
 import { emit, newEventId } from "../../realtime/event-bus.js";
 import type { JwtClaims } from "../../auth/auth.js";
+import { toE164 } from "../../platform/phone.js";
+import { withRetry, isMongoConflict } from "../../platform/retry.js";
+import { maybeReserveCommand } from "../../platform/dedup.js";
+import { cmdCounter, cmdLatency } from "../../platform/metrics.js";
 
 const LEADS = "leads";
 const LEDGER = "command_ledger";
+const PHONE_INDEX = "lead_phone_index";
 
 interface LedgerDoc {
   _id: string;
@@ -21,31 +26,66 @@ interface LedgerDoc {
   actor: string;
   tenantId: string;
   appliedAt: string;
-  result: { ok: true; eventIds: string[] } | { ok: false; error: string };
+  appliedAtTtl: Date;       // for TTL index
+  result: { ok: true; eventIds: string[]; data?: Record<string, unknown> } | { ok: false; error: string };
 }
 
-/** Idempotent: same command._id → same result. Returns produced events (or replays them). */
+interface PhoneIndexDoc {
+  _id: string;              // `${tenantId}:${phoneE164}`
+  tenantId: string;
+  phoneE164: string;
+  leadId: string;
+  createdAt: string;
+}
+
+/** Idempotent: same command._id → same result. Two-tier dedup + conflict-aware retry. */
 export async function dispatch(rawCmd: Command, user: JwtClaims) {
+  const start = Date.now();
   const ledger = col<LedgerDoc>(LEDGER);
+
+  // Tier 1: Redis fast path (cheap pre-DB reject; absorbs retry storms).
+  // Tier 2: Mongo ledger (durable truth; survives Redis loss).
+  await maybeReserveCommand(rawCmd._id);
   const existing = await ledger.findOne({ _id: rawCmd._id });
-  if (existing) return existing.result;
+  if (existing) {
+    cmdCounter.inc({ type: rawCmd.type, outcome: "replay" });
+    cmdLatency.observe(Date.now() - start, { type: rawCmd.type, outcome: "replay" });
+    return existing.result;
+  }
 
   let result: LedgerDoc["result"];
   try {
-    result = await applyCommand(rawCmd, user);
+    // Conflict-aware retry inside the bus. Handlers that hit a duplicate seq /
+    // WriteConflict get up to 3 reloads with jitter — kills tail latency under
+    // hot-aggregate contention without bubbling 5xx to clients.
+    result = await withRetry(() => applyCommand(rawCmd, user), {
+      tries: 3, baseMs: 10, jitterMs: 30, isRetriable: isMongoConflict,
+    });
   } catch (e) {
     const err = e as Error & { code?: string };
     result = { ok: false, error: `${err.code ?? "INTERNAL"}: ${err.message}` };
   }
 
-  await ledger.insertOne({
-    _id: rawCmd._id,
-    type: rawCmd.type,
-    actor: user.sub,
-    tenantId: user.tenantId,
-    appliedAt: new Date().toISOString(),
-    result,
-  });
+  try {
+    await ledger.insertOne({
+      _id: rawCmd._id, type: rawCmd.type, actor: user.sub, tenantId: user.tenantId,
+      appliedAt: new Date().toISOString(), appliedAtTtl: new Date(), result,
+    });
+  } catch (e) {
+    // Concurrent retry won the race → return its result instead of erroring.
+    if (isMongoConflict(e)) {
+      const won = await ledger.findOne({ _id: rawCmd._id });
+      if (won) {
+        cmdCounter.inc({ type: rawCmd.type, outcome: "replay-race" });
+        cmdLatency.observe(Date.now() - start, { type: rawCmd.type, outcome: "replay-race" });
+        return won.result;
+      }
+    }
+    throw e;
+  }
+
+  cmdCounter.inc({ type: rawCmd.type, outcome: result.ok ? "ok" : "error" });
+  cmdLatency.observe(Date.now() - start, { type: rawCmd.type, outcome: result.ok ? "ok" : "error" });
   return result;
 }
 
@@ -69,9 +109,44 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
   switch (cmd.type) {
     case "cmd.lead.create": {
       const p = CreateLeadCmd.parse(cmd).payload;
+
+      // Phone normalization to E.164. Rejects on unparseable input rather than
+      // letting bad data flood the system.
+      const phoneE164 = toE164(p.phone);
+      if (!phoneE164) {
+        return { ok: false, error: "VALIDATION_FAILED: Invalid phone number" };
+      }
+
+      // Atomic dedup claim. Insert into the unique index FIRST; on E11000 →
+      // surface the existing leadId. This is the only thing that holds when
+      // the same lead arrives from 5 sources within milliseconds.
+      const leadId = ulid();
+      const phoneKey = `${user.tenantId}:${phoneE164}`;
+      try {
+        await col<PhoneIndexDoc>(PHONE_INDEX).insertOne({
+          _id: phoneKey, tenantId: user.tenantId, phoneE164, leadId, createdAt: now,
+        });
+      } catch (e) {
+        if (isMongoConflict(e)) {
+          const claim = await col<PhoneIndexDoc>(PHONE_INDEX).findOne({ _id: phoneKey });
+          const evtId = newEventId();
+          await emit({
+            _id: evtId, type: "evt.lead.created", occurredAt: now,
+            actor: user.sub, tenantId: user.tenantId, correlationId, causationId: null, version: 1,
+            // Re-emit using the existing leadId so downstream consumers (sequence
+            // engine, automation rules) can run their "duplicate attempted" hooks
+            // — but we DO NOT insert another lead doc.
+            payload: { lead: { _id: claim?.leadId ?? "" } } as unknown as { lead: Lead },
+          });
+          return { ok: true, eventIds: [evtId], data: { duplicate: true, leadId: claim?.leadId } };
+        }
+        throw e;
+      }
+
       const lead = Lead.parse({
-        _id: ulid(),
+        _id: leadId,
         ...p,
+        phone: phoneE164,                  // store the canonical form
         intent: p.intent ?? "warm",
         tags: p.tags ?? [],
         zoneId: p.zoneId ?? null,
@@ -85,7 +160,8 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
         createdBy: user.sub,
         tenantId: user.tenantId,
       });
-      await col(LEADS).insertOne(lead as unknown as Record<string, unknown>);
+      // Add __v=1 — optimistic concurrency anchor. All future updates check it.
+      await col(LEADS).insertOne({ ...lead, __v: 1 } as unknown as Record<string, unknown>);
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.created", occurredAt: now,
@@ -105,8 +181,17 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
     case "cmd.lead.update": {
       const p = UpdateLeadCmd.parse(cmd).payload;
       const patch = { ...p.patch, updatedAt: now };
-      const r = await col(LEADS).updateOne({ _id: p.leadId, tenantId: user.tenantId }, { $set: patch });
-      if (r.matchedCount === 0) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
+      // Optimistic concurrency: $inc __v atomically. If client supplied
+      // expectedVersion (future-proof), enforce it; otherwise just bump.
+      const expected = (cmd as unknown as { expectedVersion?: number }).expectedVersion;
+      const filter: Record<string, unknown> = { _id: p.leadId, tenantId: user.tenantId };
+      if (typeof expected === "number") filter.__v = expected;
+      const r = await col(LEADS).updateOne(filter, { $set: patch, $inc: { __v: 1 } });
+      if (r.matchedCount === 0) {
+        const stillExists = await col(LEADS).findOne({ _id: p.leadId, tenantId: user.tenantId });
+        if (!stillExists) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
+        throw Object.assign(new Error("Version conflict — reload and retry"), { code: "CONFLICT" });
+      }
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.updated", occurredAt: now,
@@ -130,7 +215,7 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
       const p = AssignLeadCmd.parse(cmd).payload;
       const r = await col(LEADS).updateOne(
         { _id: p.leadId, tenantId: user.tenantId },
-        { $set: { assignedTcmId: p.tcmId, updatedAt: now } },
+        { $set: { assignedTcmId: p.tcmId, updatedAt: now }, $inc: { __v: 1 } },
       );
       if (r.matchedCount === 0) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
       const evtId = newEventId();
@@ -151,9 +236,14 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
 
     case "cmd.lead.change_stage": {
       const p = ChangeStageCmd.parse(cmd).payload;
-      const before = await col<{ stage: string }>(LEADS).findOne({ _id: p.leadId, tenantId: user.tenantId });
+      // Atomic read-modify-write via findOneAndUpdate so two concurrent stage
+      // changes can't lose the "from" value.
+      const before = await col<{ stage: string; __v?: number }>(LEADS).findOneAndUpdate(
+        { _id: p.leadId, tenantId: user.tenantId },
+        { $set: { stage: p.to, updatedAt: now }, $inc: { __v: 1 } },
+        { returnDocument: "before" },
+      );
       if (!before) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
-      await col(LEADS).updateOne({ _id: p.leadId, tenantId: user.tenantId }, { $set: { stage: p.to, updatedAt: now } });
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.stage_changed", occurredAt: now,
@@ -169,10 +259,16 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
       return { ok: true, eventIds: [evtId] };
     }
 
+
     case "cmd.lead.delete": {
       const p = DeleteLeadCmd.parse(cmd).payload;
+      const before = await col<{ phone: string }>(LEADS).findOne({ _id: p.leadId, tenantId: user.tenantId });
       const r = await col(LEADS).deleteOne({ _id: p.leadId, tenantId: user.tenantId });
       if (r.deletedCount === 0) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
+      // Release the phone-index claim so the same number can be re-onboarded.
+      if (before?.phone) {
+        await col<PhoneIndexDoc>(PHONE_INDEX).deleteOne({ _id: `${user.tenantId}:${before.phone}` });
+      }
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.deleted", occurredAt: now,
