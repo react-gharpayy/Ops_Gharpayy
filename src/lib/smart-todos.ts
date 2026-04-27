@@ -104,7 +104,7 @@ export async function bulkCancel(todoIds: string[]): Promise<{ ok: number; faile
   }));
   return { ok, failed };
 }
-export async function bulkSetPriority(todoIds: string[], priority: TodoPriority): Promise<void> {
+export async function bulkSetPriority(todoIds: string[], priority: Priority): Promise<void> {
   await Promise.all(todoIds.map((id) =>
     dispatch({ type: "cmd.todo.update", payload: { todoId: id, patch: { priority } } })
   ));
@@ -115,7 +115,7 @@ export async function bulkSetPriority(todoIds: string[], priority: TodoPriority)
  * Suggest a priority based on due date proximity.
  * Pure — caller decides whether to apply via cmd.todo.update.
  */
-export function suggestPriority(dueAt: string | null): TodoPriority {
+export function suggestPriority(dueAt: string | null): Priority {
   if (!dueAt) return "med";
   const ms = new Date(dueAt).getTime() - Date.now();
   if (ms < 0)               return "urgent";
