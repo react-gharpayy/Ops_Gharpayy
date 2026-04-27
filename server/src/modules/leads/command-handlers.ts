@@ -11,9 +11,14 @@ import {
 } from "../../../../src/contracts/commands.js";
 import { emit, newEventId } from "../../realtime/event-bus.js";
 import type { JwtClaims } from "../../auth/auth.js";
+import { toE164 } from "../../platform/phone.js";
+import { withRetry, isMongoConflict } from "../../platform/retry.js";
+import { maybeReserveCommand } from "../../platform/dedup.js";
+import { cmdCounter, cmdLatency } from "../../platform/metrics.js";
 
 const LEADS = "leads";
 const LEDGER = "command_ledger";
+const PHONE_INDEX = "lead_phone_index";
 
 interface LedgerDoc {
   _id: string;
@@ -21,31 +26,66 @@ interface LedgerDoc {
   actor: string;
   tenantId: string;
   appliedAt: string;
-  result: { ok: true; eventIds: string[] } | { ok: false; error: string };
+  appliedAtTtl: Date;       // for TTL index
+  result: { ok: true; eventIds: string[]; data?: Record<string, unknown> } | { ok: false; error: string };
 }
 
-/** Idempotent: same command._id → same result. Returns produced events (or replays them). */
+interface PhoneIndexDoc {
+  _id: string;              // `${tenantId}:${phoneE164}`
+  tenantId: string;
+  phoneE164: string;
+  leadId: string;
+  createdAt: string;
+}
+
+/** Idempotent: same command._id → same result. Two-tier dedup + conflict-aware retry. */
 export async function dispatch(rawCmd: Command, user: JwtClaims) {
+  const start = Date.now();
   const ledger = col<LedgerDoc>(LEDGER);
+
+  // Tier 1: Redis fast path (cheap pre-DB reject; absorbs retry storms).
+  // Tier 2: Mongo ledger (durable truth; survives Redis loss).
+  await maybeReserveCommand(rawCmd._id);
   const existing = await ledger.findOne({ _id: rawCmd._id });
-  if (existing) return existing.result;
+  if (existing) {
+    cmdCounter.inc({ type: rawCmd.type, outcome: "replay" });
+    cmdLatency.observe(Date.now() - start, { type: rawCmd.type, outcome: "replay" });
+    return existing.result;
+  }
 
   let result: LedgerDoc["result"];
   try {
-    result = await applyCommand(rawCmd, user);
+    // Conflict-aware retry inside the bus. Handlers that hit a duplicate seq /
+    // WriteConflict get up to 3 reloads with jitter — kills tail latency under
+    // hot-aggregate contention without bubbling 5xx to clients.
+    result = await withRetry(() => applyCommand(rawCmd, user), {
+      tries: 3, baseMs: 10, jitterMs: 30, isRetriable: isMongoConflict,
+    });
   } catch (e) {
     const err = e as Error & { code?: string };
     result = { ok: false, error: `${err.code ?? "INTERNAL"}: ${err.message}` };
   }
 
-  await ledger.insertOne({
-    _id: rawCmd._id,
-    type: rawCmd.type,
-    actor: user.sub,
-    tenantId: user.tenantId,
-    appliedAt: new Date().toISOString(),
-    result,
-  });
+  try {
+    await ledger.insertOne({
+      _id: rawCmd._id, type: rawCmd.type, actor: user.sub, tenantId: user.tenantId,
+      appliedAt: new Date().toISOString(), appliedAtTtl: new Date(), result,
+    });
+  } catch (e) {
+    // Concurrent retry won the race → return its result instead of erroring.
+    if (isMongoConflict(e)) {
+      const won = await ledger.findOne({ _id: rawCmd._id });
+      if (won) {
+        cmdCounter.inc({ type: rawCmd.type, outcome: "replay-race" });
+        cmdLatency.observe(Date.now() - start, { type: rawCmd.type, outcome: "replay-race" });
+        return won.result;
+      }
+    }
+    throw e;
+  }
+
+  cmdCounter.inc({ type: rawCmd.type, outcome: result.ok ? "ok" : "error" });
+  cmdLatency.observe(Date.now() - start, { type: rawCmd.type, outcome: result.ok ? "ok" : "error" });
   return result;
 }
 
