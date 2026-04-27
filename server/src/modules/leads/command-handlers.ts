@@ -109,9 +109,44 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
   switch (cmd.type) {
     case "cmd.lead.create": {
       const p = CreateLeadCmd.parse(cmd).payload;
+
+      // Phone normalization to E.164. Rejects on unparseable input rather than
+      // letting bad data flood the system.
+      const phoneE164 = toE164(p.phone);
+      if (!phoneE164) {
+        return { ok: false, error: "VALIDATION_FAILED: Invalid phone number" };
+      }
+
+      // Atomic dedup claim. Insert into the unique index FIRST; on E11000 →
+      // surface the existing leadId. This is the only thing that holds when
+      // the same lead arrives from 5 sources within milliseconds.
+      const leadId = ulid();
+      const phoneKey = `${user.tenantId}:${phoneE164}`;
+      try {
+        await col<PhoneIndexDoc>(PHONE_INDEX).insertOne({
+          _id: phoneKey, tenantId: user.tenantId, phoneE164, leadId, createdAt: now,
+        });
+      } catch (e) {
+        if (isMongoConflict(e)) {
+          const claim = await col<PhoneIndexDoc>(PHONE_INDEX).findOne({ _id: phoneKey });
+          const evtId = newEventId();
+          await emit({
+            _id: evtId, type: "evt.lead.created", occurredAt: now,
+            actor: user.sub, tenantId: user.tenantId, correlationId, causationId: null, version: 1,
+            // Re-emit using the existing leadId so downstream consumers (sequence
+            // engine, automation rules) can run their "duplicate attempted" hooks
+            // — but we DO NOT insert another lead doc.
+            payload: { lead: { _id: claim?.leadId ?? "" } } as unknown as { lead: Lead },
+          });
+          return { ok: true, eventIds: [evtId], data: { duplicate: true, leadId: claim?.leadId } };
+        }
+        throw e;
+      }
+
       const lead = Lead.parse({
-        _id: ulid(),
+        _id: leadId,
         ...p,
+        phone: phoneE164,                  // store the canonical form
         intent: p.intent ?? "warm",
         tags: p.tags ?? [],
         zoneId: p.zoneId ?? null,
@@ -125,7 +160,8 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
         createdBy: user.sub,
         tenantId: user.tenantId,
       });
-      await col(LEADS).insertOne(lead as unknown as Record<string, unknown>);
+      // Add __v=1 — optimistic concurrency anchor. All future updates check it.
+      await col(LEADS).insertOne({ ...lead, __v: 1 } as unknown as Record<string, unknown>);
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.created", occurredAt: now,
