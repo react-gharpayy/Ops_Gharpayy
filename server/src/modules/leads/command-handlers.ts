@@ -262,8 +262,13 @@ async function applyCommand(cmd: Command, user: JwtClaims): Promise<LedgerDoc["r
 
     case "cmd.lead.delete": {
       const p = DeleteLeadCmd.parse(cmd).payload;
+      const before = await col<{ phone: string }>(LEADS).findOne({ _id: p.leadId, tenantId: user.tenantId });
       const r = await col(LEADS).deleteOne({ _id: p.leadId, tenantId: user.tenantId });
       if (r.deletedCount === 0) throw Object.assign(new Error("Lead not found"), { code: "NOT_FOUND" });
+      // Release the phone-index claim so the same number can be re-onboarded.
+      if (before?.phone) {
+        await col<PhoneIndexDoc>(PHONE_INDEX).deleteOne({ _id: `${user.tenantId}:${before.phone}` });
+      }
       const evtId = newEventId();
       await emit({
         _id: evtId, type: "evt.lead.deleted", occurredAt: now,
