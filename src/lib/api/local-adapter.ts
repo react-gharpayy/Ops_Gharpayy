@@ -158,7 +158,82 @@ export const localAdapter = {
         return { ok: true, eventIds: [evt._id] };
       }
 
-      // Lead commands aren't simulated locally yet — those still flow through useApp store.
+      // ----- Lead commands (mirror server/src/modules/leads/command-handlers.ts) -----
+      if (t === "cmd.lead.create") {
+        const p = cmd.payload as Record<string, unknown>;
+        const lead: Lead = {
+          _id: ulid(),
+          name: String(p.name ?? ""),
+          phone: String(p.phone ?? ""),
+          source: (p.source as string) ?? "manual",
+          budget: Number(p.budget ?? 0),
+          moveInDate: String(p.moveInDate ?? new Date().toISOString().slice(0, 10)),
+          preferredArea: String(p.preferredArea ?? ""),
+          zoneId: (p.zoneId as string | null) ?? null,
+          assignedTcmId: null,
+          stage: "new",
+          intent: (p.intent as Lead["intent"]) ?? "warm",
+          confidence: 50,
+          tags: (p.tags as string[]) ?? [],
+          nextFollowUpAt: null,
+          responseSpeedMins: 0,
+          createdAt: nowISO(), updatedAt: nowISO(),
+          createdBy: USER, tenantId: TENANT,
+        };
+        const list = read<Lead>(LEADS_KEY); list.unshift(lead); write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.created" as const, payload: { lead } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.update") {
+        const p = cmd.payload as { leadId: string; patch: Partial<Lead> };
+        const list = read<Lead>(LEADS_KEY);
+        const idx = list.findIndex((l) => l._id === p.leadId);
+        if (idx < 0) return { ok: false, error: "Lead not found" };
+        const patch = { ...p.patch, updatedAt: nowISO() };
+        list[idx] = { ...list[idx], ...patch } as Lead;
+        write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.updated" as const, payload: { leadId: p.leadId, patch } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.assign") {
+        const p = cmd.payload as { leadId: string; tcmId: string };
+        const list = read<Lead>(LEADS_KEY);
+        const idx = list.findIndex((l) => l._id === p.leadId);
+        if (idx < 0) return { ok: false, error: "Lead not found" };
+        list[idx] = { ...list[idx], assignedTcmId: p.tcmId, updatedAt: nowISO() };
+        write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.assigned" as const, payload: { leadId: p.leadId, tcmId: p.tcmId } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.change_stage") {
+        const p = cmd.payload as { leadId: string; to: Lead["stage"] };
+        const list = read<Lead>(LEADS_KEY);
+        const idx = list.findIndex((l) => l._id === p.leadId);
+        if (idx < 0) return { ok: false, error: "Lead not found" };
+        const from = list[idx].stage;
+        list[idx] = { ...list[idx], stage: p.to, updatedAt: nowISO() };
+        write(LEADS_KEY, list);
+        const evt = { ...env(correlationId), type: "evt.lead.stage_changed" as const, payload: { leadId: p.leadId, from, to: p.to } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
+      if (t === "cmd.lead.delete") {
+        const p = cmd.payload as { leadId: string };
+        const list = read<Lead>(LEADS_KEY);
+        if (!list.some((l) => l._id === p.leadId)) return { ok: false, error: "Lead not found" };
+        write(LEADS_KEY, list.filter((l) => l._id !== p.leadId));
+        const evt = { ...env(correlationId), type: "evt.lead.deleted" as const, payload: { leadId: p.leadId } };
+        emit(evt as DomainEvent);
+        return { ok: true, eventIds: [evt._id] };
+      }
+
       return { ok: true, eventIds: [] };
     } catch (e) {
       return { ok: false, error: (e as Error).message };
