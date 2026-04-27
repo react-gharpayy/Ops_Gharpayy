@@ -3,10 +3,13 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
 import { env, corsOrigins } from "./config/env.js";
-import { connectMongo } from "./db/mongo.js";
-import { redis } from "./db/redis.js";
-import { attachSocketIO } from "./realtime/socket.js";
+import { connectMongo, disconnectMongo } from "./db/mongo.js";
+import { redis, redisPub, redisSub } from "./db/redis.js";
+import { attachSocketIO, io } from "./realtime/socket.js";
+import { startOutboxPublisher, stopOutboxPublisher } from "./realtime/event-bus.js";
 import { registerAuthRoutes } from "./routes/auth.js";
+import { registerHealthRoutes } from "./routes/health.js";
+import { registerWebhookRoutes } from "./routes/webhooks.js";
 import { registerLeadsRoutes } from "./modules/leads/routes.js";
 import { registerTodosRoutes } from "./modules/todos/routes.js";
 import { registerActivitiesRoutes } from "./modules/activities/routes.js";
@@ -18,25 +21,76 @@ async function main() {
       transport: env.NODE_ENV === "development" ? { target: "pino-pretty" } : undefined,
     },
     trustProxy: true,
+    // Generate a per-request correlation id surfaced as `req.id` and threaded
+    // into events, jobs, logs, and WS broadcasts. Single grep across the stack.
+    genReqId: () => `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
+    requestIdHeader: "x-request-id",
   });
 
   await app.register(cors, { origin: corsOrigins, credentials: true });
   await app.register(cookie);
-  await app.register(rateLimit, { max: 300, timeWindow: "1 minute", redis });
+  await app.register(rateLimit, {
+    max: 300,
+    timeWindow: "1 minute",
+    redis,
+    keyGenerator: (req) => {
+      // Per-user when authenticated, per-IP otherwise. Avoids one user starving
+      // a shared NAT.
+      const auth = req.headers.authorization;
+      if (auth?.startsWith("Bearer ")) return `u:${auth.slice(7, 24)}`;
+      return `ip:${req.ip}`;
+    },
+  });
 
   await connectMongo();
 
+  // Health/metrics first — MUST work even before everything else is wired.
+  registerHealthRoutes(app);
   app.get("/api/health", async () => ({ ok: true, ts: new Date().toISOString() }));
 
   registerAuthRoutes(app);
+  registerWebhookRoutes(app);
   registerLeadsRoutes(app);
   registerTodosRoutes(app);
   registerActivitiesRoutes(app);
 
   await attachSocketIO(app);
 
+  // Outbox publisher: turns durable events into pub/sub broadcasts.
+  // Multiple replicas can run; per-row lease prevents double-publish.
+  startOutboxPublisher(app.log);
+
   await app.listen({ port: env.PORT, host: env.HOST });
   app.log.info(`✓ Gharpayy server listening on ${env.HOST}:${env.PORT}`);
+
+  // ---------- Graceful shutdown ----------
+  // PM2/k8s sends SIGTERM; we have ~10s before SIGKILL. Order matters:
+  //   1) stop accepting new HTTP/WS
+  //   2) drain in-flight (Fastify close awaits handlers)
+  //   3) flush outbox publisher
+  //   4) close Mongo + Redis
+  let shuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    app.log.info({ signal }, "shutdown initiated");
+    try {
+      await app.close();                // 1 + 2
+      if (io) await new Promise<void>((res) => io!.close(() => res()));
+      await stopOutboxPublisher();      // 3
+      await disconnectMongo();
+      await Promise.allSettled([redis.quit(), redisPub.quit(), redisSub.quit()]);
+      app.log.info("shutdown clean");
+      process.exit(0);
+    } catch (err) {
+      app.log.error({ err }, "shutdown failed");
+      process.exit(1);
+    }
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT",  () => shutdown("SIGINT"));
+  process.on("unhandledRejection", (reason) => app.log.error({ reason }, "unhandledRejection"));
+  process.on("uncaughtException",  (err)    => app.log.error({ err },    "uncaughtException"));
 }
 
 main().catch((err) => {
