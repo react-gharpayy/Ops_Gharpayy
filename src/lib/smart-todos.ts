@@ -6,7 +6,9 @@
  * local-mode and server-mode.
  */
 import { dispatch } from "@/lib/api/command-bus";
-import type { Todo, TodoPriority } from "@/contracts";
+import type { Todo } from "@/contracts";
+
+type Priority = "low" | "med" | "high" | "urgent";
 
 const SNOOZE_KEY  = "gharpayy.smart.todo.snooze.v1";       // { [todoId]: ISO until }
 const RECUR_KEY   = "gharpayy.smart.todo.recur.v1";        // { [todoId]: recurDays }
