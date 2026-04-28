@@ -4,7 +4,7 @@ import type {
   PostTourUpdate, ClientDecision, LeadStage, Intent,
   HandoffMessage, ActiveSequence, SequenceKind, Booking,
 } from "./types";
-import { ACTIVITIES, FOLLOWUPS, LEADS, PROPERTIES, TCMS, TOURS, HANDOFFS, SEQUENCES_INIT } from "./mock-data";
+import { ACTIVITIES, FOLLOWUPS, PROPERTIES, TCMS, TOURS, HANDOFFS, SEQUENCES_INIT } from "./mock-data";
 import { autoAssign as autoAssignFn } from "./routing";
 import { pushObjectionToOwner, pushTourViewToOwner } from "@/owner/team-bridge";
 import { emit as emitConnector } from "./connectors";
