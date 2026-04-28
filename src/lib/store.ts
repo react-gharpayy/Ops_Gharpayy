@@ -89,6 +89,7 @@ export const useApp = create<AppState>((set, get) => ({
   bookings: [],
 
   addLead: (lead) => set((s) => ({ leads: [lead, ...s.leads] })),
+  setLeads: (leads: Lead[]) => set({ leads }),
 
   setLeadStage: (leadId, stage) => {
     set((s) => ({
