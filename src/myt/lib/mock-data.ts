@@ -86,144 +86,17 @@ const concerns = ['food quality', 'roommate match', 'distance to office', 'parki
 // Dummy data removed — CRM now displays only real data from VPS/MongoDB.
 // Seed arrays kept as empty exports to preserve module shape for legacy imports.
 export const tours: Tour[] = [];
-const _unusedToursFactory = (length: number) => Array.from({ length }, (_, i) => {
-  const tcms = teamMembers.filter(m => m.role === 'tcm');
-  const flowOps = teamMembers.filter(m => m.role === 'flow-ops');
-  const assignee = tcms[i % tcms.length];
-  const scheduler = flowOps[i % flowOps.length];
-  const zone = zones.find(z => z.id === assignee.zoneId)!;
-  const hour = 10 + (i % 11);
-  const status = i < 20 ? 'completed' : i < 35 ? 'confirmed' : i < 50 ? 'scheduled' : i < 65 ? 'no-show' : 'cancelled';
-  const showUp = status === 'completed' ? true : status === 'no-show' ? false : null;
-  const outcome = status === 'completed' ? outcomes[i % 3]! : null;
+export const initialLeads: Lead[] = [];
+export const initialBookings: Booking[] = [];
+export const heatmapData: HeatmapData[] = [];
 
-  let tourDate: string;
-  if (i < 30) {
-    tourDate = today;
-  } else if (i < 55) {
-    const d = new Date();
-    d.setDate(d.getDate() - (1 + (i % 6)));
-    tourDate = d.toISOString().split('T')[0];
-  } else {
-    const d = new Date();
-    d.setDate(d.getDate() - (7 + (i % 23)));
-    tourDate = d.toISOString().split('T')[0];
-  }
-
-  // Build qualification + score
-  const moveIn = new Date();
-  moveIn.setDate(moveIn.getDate() + (i % 18));
-  const budget = 7000 + (i % 20) * 500;
-  const qualification = {
-    moveInDate: moveIn.toISOString().split('T')[0],
-    decisionMaker: decisionMakers[i % 3],
-    roomType: roomTypes[i % roomTypes.length],
-    occupation: occupations[i % occupations.length],
-    workLocation: zone.area,
-    willBookToday: willBookOpts[i % 3],
-    readyIn48h: i % 4 === 0,
-    exploring: i % 7 === 0,
-    comparing: i % 5 === 0,
-    needsFamily: i % 6 === 0,
-    keyConcern: concerns[i % concerns.length],
-  };
-  const { score, intent, reason } = scoreTour(qualification, budget);
-  const confirmationStrength: ConfirmationStrength = inferConfirmationStrength(qualification);
-
-  return {
-    id: `t${i + 1}`,
-    leadName: leadNames[i % leadNames.length],
-    phone: `+91 ${9700000000 + i}`,
-    assignedTo: assignee.id,
-    assignedToName: assignee.name,
-    propertyName: properties[i % properties.length],
-    area: zone.area,
-    zoneId: zone.id,
-    tourDate,
-    tourTime: `${hour.toString().padStart(2, '0')}:${(i % 2 === 0 ? '00' : '30')}`,
-    bookingSource: sources[i % sources.length],
-    scheduledBy: scheduler.id,
-    scheduledByName: scheduler.name,
-    leadType: i % 3 === 0 ? 'urgent' : 'future',
-    status,
-    showUp,
-    outcome,
-    remarks: status === 'completed' ? (outcome === 'draft' ? 'Ready to sign' : outcome === 'follow-up' ? 'Needs another visit' : 'Budget mismatch') : '',
-    budget,
-    createdAt: new Date().toISOString(),
-    tourType: tourTypes[i % 3],
-    intent,
-    confidenceScore: score,
-    confidenceReason: reason,
-    confirmationStrength,
-    qualification,
-    tokenPaid: outcome === 'booked' || (status === 'completed' && i % 11 === 0),
-    whyLost: outcome === 'rejected' ? (['price','location','food','comparing'] as const)[i % 4] : null,
-  };
-});
-
-// Mock leads
-export const initialLeads: Lead[] = Array.from({ length: 25 }, (_, i) => {
-  const flowOps = teamMembers.filter(m => m.role === 'flow-ops');
-  const agent = flowOps[i % flowOps.length];
-  const area = zones[i % zones.length].area;
-  const budget = 5000 + (i % 15) * 1000;
-  const moveIn = new Date();
-  moveIn.setDate(moveIn.getDate() + (i % 20));
-  const dateConfirmed = i % 3 !== 2;
-  const areaCovered = zones.some(z => z.area === area);
-  const mytQualified = areaCovered && budget >= 7000 && (moveIn.getTime() - Date.now()) / (1000*60*60*24) <= 15 && dateConfirmed;
-
-  return {
-    id: `l${i + 1}`,
-    name: leadNames[(i + 40) % leadNames.length],
-    phone: `+91 ${9600000000 + i}`,
-    area,
-    budget,
-    moveInDate: moveIn.toISOString().split('T')[0],
-    dateConfirmed,
-    status: mytQualified ? (i % 4 === 0 ? 'tour-scheduled' : 'qualified') : (i % 5 === 0 ? 'dead' : 'contacted'),
-    mytQualified,
-    addedBy: agent.id,
-    addedByName: agent.name,
-    createdAt: randomDate(7),
-    notes: mytQualified ? 'MYT qualified — ready for tour' : 'Needs follow-up',
-  };
-});
-
-// Mock bookings
-export const initialBookings: Booking[] = Array.from({ length: 12 }, (_, i) => {
-  const tcms = teamMembers.filter(m => m.role === 'tcm');
-  const closer = tcms[i % tcms.length];
-  const statuses: Booking['agreementStatus'][] = ['pending', 'signed', 'moved-in'];
-  return {
-    id: `b${i + 1}`,
-    leadName: leadNames[(i + 60) % leadNames.length],
-    phone: `+91 ${9500000000 + i}`,
-    propertyName: properties[i % properties.length],
-    area: zones[i % zones.length].area,
-    rentValue: 8000 + (i % 10) * 2000,
-    viaTour: i % 3 !== 0,
-    tourId: i % 3 !== 0 ? `t${i + 1}` : null,
-    agreementStatus: statuses[i % 3],
-    closedBy: closer.id,
-    closedByName: closer.name,
-    createdAt: randomDate(14),
-  };
-});
-
-export const heatmapData: HeatmapData[] = [
-  { hour: '10 AM', tours: 12, showUps: 9, drafts: 3 },
-  { hour: '11 AM', tours: 15, showUps: 11, drafts: 4 },
-  { hour: '12 PM', tours: 10, showUps: 7, drafts: 2 },
-  { hour: '1 PM', tours: 8, showUps: 5, drafts: 1 },
-  { hour: '2 PM', tours: 14, showUps: 10, drafts: 3 },
-  { hour: '3 PM', tours: 11, showUps: 8, drafts: 3 },
-  { hour: '4 PM', tours: 16, showUps: 13, drafts: 5 },
-  { hour: '5 PM', tours: 13, showUps: 9, drafts: 2 },
-  { hour: '6 PM', tours: 9, showUps: 7, drafts: 2 },
-  { hour: '7 PM', tours: 6, showUps: 4, drafts: 1 },
-  { hour: '8 PM', tours: 4, showUps: 3, drafts: 1 },
+// Suppress unused-import warnings for helpers that were only used by the
+// (now-removed) seed factories. Keeping these references is cheaper than
+// untangling every shared util used by analytics helpers below.
+void [
+  properties, leadNames, statuses, outcomes, sources, tourTypes, willBookOpts,
+  decisionMakers, roomTypes, occupations, concerns, scoreTour,
+  inferConfirmationStrength, randomDate, today,
 ];
 
 export function filterToursByDateRange(tourList: Tour[], range: DateRange): Tour[] {
