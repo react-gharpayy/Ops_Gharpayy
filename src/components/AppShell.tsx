@@ -26,6 +26,7 @@ import { activePersona } from "@/lib/personas";
 import { VpsConnectionStatus } from "./VpsConnectionStatus";
 import { ClientOnly } from "./ClientOnly";
 import { QuickCreateMenu } from "./QuickCreateMenu";
+import { LiveLeadsBridge } from "./LiveLeadsBridge";
 
 function PipRouteSyncBridge() {
   const { active } = usePip();
@@ -163,6 +164,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <PictureInPictureProvider>
       <PipRouteSyncBridge />
+      <LiveLeadsBridge />
       <div className="min-h-screen flex w-full bg-background text-foreground">
       {/* Sidebar */}
       <aside className="hidden md:flex w-[240px] flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border sticky top-0 h-screen">

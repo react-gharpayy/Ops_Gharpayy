@@ -4,7 +4,7 @@ import type {
   PostTourUpdate, ClientDecision, LeadStage, Intent,
   HandoffMessage, ActiveSequence, SequenceKind, Booking,
 } from "./types";
-import { ACTIVITIES, FOLLOWUPS, LEADS, PROPERTIES, TCMS, TOURS, HANDOFFS, SEQUENCES_INIT } from "./mock-data";
+import { ACTIVITIES, FOLLOWUPS, PROPERTIES, TCMS, TOURS, HANDOFFS, SEQUENCES_INIT } from "./mock-data";
 import { autoAssign as autoAssignFn } from "./routing";
 import { pushObjectionToOwner, pushTourViewToOwner } from "@/owner/team-bridge";
 import { emit as emitConnector } from "./connectors";
@@ -32,6 +32,7 @@ interface AppState {
   bookings: Booking[];
 
   addLead: (lead: Lead) => void;
+  setLeads: (leads: Lead[]) => void;
   setLeadStage: (leadId: string, stage: LeadStage) => void;
   setLeadIntent: (leadId: string, intent: Intent) => void;
   setLeadFollowUp: (leadId: string, dueAt: string, priority: FollowUp["priority"], reason?: string) => void;
@@ -77,7 +78,10 @@ export const useApp = create<AppState>((set, get) => ({
 
   tcms: TCMS,
   properties: PROPERTIES,
-  leads: LEADS,
+  // Leads are now hydrated from the VPS Mongo backend by <LiveLeadsBridge/>.
+  // Other entities (tours, follow-ups, handoffs, sequences, bookings) still
+  // use mock data until their backend modules are wired.
+  leads: [],
   tours: TOURS,
   activities: ACTIVITIES,
   followUps: FOLLOWUPS,
@@ -86,6 +90,7 @@ export const useApp = create<AppState>((set, get) => ({
   bookings: [],
 
   addLead: (lead) => set((s) => ({ leads: [lead, ...s.leads] })),
+  setLeads: (leads: Lead[]) => set({ leads }),
 
   setLeadStage: (leadId, stage) => {
     set((s) => ({
