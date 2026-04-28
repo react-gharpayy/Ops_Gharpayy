@@ -26,6 +26,7 @@ import { activePersona } from "@/lib/personas";
 import { VpsConnectionStatus } from "./VpsConnectionStatus";
 import { ClientOnly } from "./ClientOnly";
 import { QuickCreateMenu } from "./QuickCreateMenu";
+import { LiveLeadsBridge } from "./LiveLeadsBridge";
 
 function PipRouteSyncBridge() {
   const { active } = usePip();
