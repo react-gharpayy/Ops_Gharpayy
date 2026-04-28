@@ -77,7 +77,10 @@ export const useApp = create<AppState>((set, get) => ({
 
   tcms: TCMS,
   properties: PROPERTIES,
-  leads: LEADS,
+  // Leads are now hydrated from the VPS Mongo backend by <LiveLeadsBridge/>.
+  // Other entities (tours, follow-ups, handoffs, sequences, bookings) still
+  // use mock data until their backend modules are wired.
+  leads: [],
   tours: TOURS,
   activities: ACTIVITIES,
   followUps: FOLLOWUPS,
