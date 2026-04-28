@@ -83,7 +83,10 @@ const roomTypes = ['Single', 'Double Sharing', 'Triple Sharing', 'Studio'];
 const occupations = ['Infosys', 'Wipro', 'Amazon', 'Christ University', 'PES University', 'Flipkart'];
 const concerns = ['food quality', 'roommate match', 'distance to office', 'parking', 'wifi speed'];
 
-export const tours: Tour[] = Array.from({ length: 80 }, (_, i) => {
+// Dummy data removed — CRM now displays only real data from VPS/MongoDB.
+// Seed arrays kept as empty exports to preserve module shape for legacy imports.
+export const tours: Tour[] = [];
+const _unusedToursFactory = (length: number) => Array.from({ length }, (_, i) => {
   const tcms = teamMembers.filter(m => m.role === 'tcm');
   const flowOps = teamMembers.filter(m => m.role === 'flow-ops');
   const assignee = tcms[i % tcms.length];
