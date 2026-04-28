@@ -11,12 +11,21 @@ const LEADS_KEY = "gharpayy.local.leads";
 const TENANT = "local";
 const USER = "local-user";
 
-// Seed a handful of demo leads on first load so the live-leads UI isn't empty.
-const SEED_LEADS: Lead[] = [
-  { _id: "LD000000000000000000000001", name: "Aarav Mehta", phone: "+919812345671", source: "instagram", budget: 12000, moveInDate: "2026-05-10", preferredArea: "Koramangala", zoneId: "z-blr-south", assignedTcmId: null, stage: "new", intent: "warm", confidence: 60, tags: [], nextFollowUpAt: null, responseSpeedMins: 0, createdAt: new Date(Date.now() - 86_400_000).toISOString(), updatedAt: new Date(Date.now() - 86_400_000).toISOString(), createdBy: USER, tenantId: TENANT },
-  { _id: "LD000000000000000000000002", name: "Riya Sharma",  phone: "+919812345672", source: "google",    budget: 18000, moveInDate: "2026-05-15", preferredArea: "HSR Layout",  zoneId: "z-blr-south", assignedTcmId: null, stage: "contacted", intent: "hot", confidence: 78, tags: ["urgent"], nextFollowUpAt: null, responseSpeedMins: 4, createdAt: new Date(Date.now() - 3_600_000).toISOString(), updatedAt: new Date().toISOString(), createdBy: USER, tenantId: TENANT },
-  { _id: "LD000000000000000000000003", name: "Karan Verma",  phone: "+919812345673", source: "referral",  budget: 9500,  moveInDate: "2026-06-01", preferredArea: "Whitefield",  zoneId: "z-blr-east",  assignedTcmId: null, stage: "tour-scheduled", intent: "warm", confidence: 65, tags: [], nextFollowUpAt: null, responseSpeedMins: 12, createdAt: new Date(Date.now() - 7_200_000).toISOString(), updatedAt: new Date().toISOString(), createdBy: USER, tenantId: TENANT },
-];
+// No seed leads — the live-leads UI shows empty state until the user adds one.
+const SEED_LEADS: Lead[] = [];
+
+// One-time cleanup: if the user previously ran in local mode, the old demo leads
+// are still sitting in localStorage. Wipe them once VITE_API_URL is configured.
+if (typeof window !== "undefined") {
+  const url = import.meta.env.VITE_API_URL as string | undefined;
+  const cleaned = localStorage.getItem("gharpayy.local.cleaned_v1") === "1";
+  if (url && !cleaned) {
+    localStorage.removeItem(LEADS_KEY);
+    localStorage.removeItem(TODOS_KEY);
+    localStorage.removeItem(ACTS_KEY);
+    localStorage.setItem("gharpayy.local.cleaned_v1", "1");
+  }
+}
 
 type Listener = (e: DomainEvent) => void;
 const listeners = new Set<Listener>();

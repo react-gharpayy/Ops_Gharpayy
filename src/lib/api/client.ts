@@ -38,14 +38,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
-// Try the network first; fall back to local adapter on any failure when in local mode.
+// When VITE_API_URL is set we trust the VPS as the source of truth — surface
+// errors to the UI instead of silently serving stale localStorage data. The
+// local adapter is only used when explicitly in local mode (no VITE_API_URL,
+// or `gharpayy.force_local` flag set).
 async function safe<T>(networkFn: () => Promise<T>, localFn: () => T): Promise<T> {
   if (isLocalMode()) return localFn();
-  try { return await networkFn(); }
-  catch (e) {
-    console.warn("[api] network failed, falling back to local adapter:", (e as Error).message);
-    return localFn();
-  }
+  return await networkFn();
 }
 
 export const api = {
