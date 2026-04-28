@@ -1,5 +1,4 @@
-import { Zone, TeamMember, Tour, HeatmapData, Lead, Booking, TourType, Intent, ConfirmationStrength, WillBookToday, DecisionMaker } from './types';
-import { scoreTour, inferConfirmationStrength } from './confidence';
+import { Zone, TeamMember, Tour, HeatmapData, Lead, Booking } from './types';
 
 export const zones: Zone[] = [
   { id: 'z1', name: 'Zone A — Koramangala', area: 'Koramangala' },
