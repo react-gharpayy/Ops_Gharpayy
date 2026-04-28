@@ -62,41 +62,13 @@ const leadNames = [
   'Mala Mohan','Arvind Babu','Geeta Deshpande','Pushpa S','Venkatesh Roy',
 ];
 
-// Generate dates spread over last 30 days
-function randomDate(daysBack: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - Math.floor(Math.random() * daysBack));
-  return d.toISOString().split('T')[0];
-}
-
-const today = new Date().toISOString().split('T')[0];
-
-const statuses: Tour['status'][] = ['scheduled','confirmed','completed','no-show','cancelled'];
-const outcomes: Tour['outcome'][] = ['draft','follow-up','rejected', null];
-const sources: Tour['bookingSource'][] = ['call','whatsapp','referral','walk-in'];
-
-const tourTypes: TourType[] = ['physical', 'virtual', 'pre-book-pitch'];
-const willBookOpts: WillBookToday[] = ['yes', 'maybe', 'no'];
-const decisionMakers: DecisionMaker[] = ['self', 'parent', 'group'];
-const roomTypes = ['Single', 'Double Sharing', 'Triple Sharing', 'Studio'];
-const occupations = ['Infosys', 'Wipro', 'Amazon', 'Christ University', 'PES University', 'Flipkart'];
-const concerns = ['food quality', 'roommate match', 'distance to office', 'parking', 'wifi speed'];
-
 // Dummy data removed — CRM now displays only real data from VPS/MongoDB.
-// Seed arrays kept as empty exports to preserve module shape for legacy imports.
 export const tours: Tour[] = [];
 export const initialLeads: Lead[] = [];
 export const initialBookings: Booking[] = [];
 export const heatmapData: HeatmapData[] = [];
 
-// Suppress unused-import warnings for helpers that were only used by the
-// (now-removed) seed factories. Keeping these references is cheaper than
-// untangling every shared util used by analytics helpers below.
-void [
-  properties, leadNames, statuses, outcomes, sources, tourTypes, willBookOpts,
-  decisionMakers, roomTypes, occupations, concerns, scoreTour,
-  inferConfirmationStrength, randomDate, today,
-];
+void [names, properties, leadNames];
 
 export function filterToursByDateRange(tourList: Tour[], range: DateRange): Tour[] {
   const now = new Date();
